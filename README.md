@@ -191,12 +191,23 @@ En el inicio, la maqueta se descarga **después** de que la página terminó de 
 4. Guárdalo en `modelos/` y cambia la ruta en el JSON: `"modelo": "modelos/tu-archivo.glb"`.
 5. **Ubicar los 3 puntos:** abre **modelviewer.dev/editor**, arrastra tu `.glb`, entra a la pestaña de *Hotspots*, haz clic en el modelo donde quieres cada punto y copia los valores `data-position` y `data-normal` al JSON (`"posicion"` y `"normal"`).
 
-## 8. Programar la placa NFC
+## 8. La placa: QR (hoy) y NFC (después)
 
-1. Compra etiquetas **NTAG213 o NTAG215** (stickers o tarjetas).
-2. Instala la app gratuita **NFC Tools** (Android o iPhone).
-3. **Escribir → Añadir un registro → URL** → pega la URL de GitHub Pages → **Escribir** y acerca la etiqueta.
-4. **Diseño de la placa:** abre `placa.html` en la URL publicada. Ya trae «Escanea aquí», el ícono NFC, una línea que explica qué es (H1) y un **QR generado automáticamente** con la misma dirección (respaldo para celulares sin NFC). Imprime con Ctrl+P (tamaño 10 × 15 cm) y pega la etiqueta NFC detrás de la zona punteada «Acerca tu celular».
+**La dirección pública está en un solo lugar:** `js/config.js` → `URL_PUBLICA = 'https://dianapapo.github.io/vitrina-digital/'`.
+
+- **QR (método principal por ahora).** `placa.html` lo genera a partir de `URL_PUBLICA`, así que apunta al sitio publicado **aunque abras la placa en tu compu**. Abre `…/index.html?src=qr`. El `?src=qr` sirve para que las métricas (Fase 6) sepan que la visita llegó por el QR.
+- **Descargas para imprenta:** botones «Descargar QR (PNG)», de unos 2.000 px, y «Descargar QR (SVG)», vectorial. Los dos traen el margen blanco reglamentario de 4 módulos y corrección de errores media (M).
+- **Imprimir la placa:** botón «Imprimir placa» o Ctrl+P (10 × 15 cm). La zona punteada «Acerca tu celular» queda para el chip.
+- **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
+
+### Prueba automática del QR
+`pruebas/qr.test.mjs` abre `placa.html` en Chrome y **decodifica** con jsQR el QR de la pantalla, el PNG y el SVG descargados. Comprueba que los tres apuntan exactamente a `https://dianapapo.github.io/vitrina-digital/index.html?src=qr`, que esa URL abre el inicio y que no hay errores en la consola.
+
+```bash
+cd pruebas
+npm install      # solo la primera vez
+npm test
+```
 
 ## 9. El asistente «Pregúntale a la maqueta»
 

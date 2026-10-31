@@ -1,10 +1,12 @@
 <!doctype html>
 <!--
   PLACA IMPRIMIBLE (para el aula).
-  Genera el diseño de la placa con el QR de respaldo apuntando a la URL del sitio.
-  1. Abre esta página en la URL publicada (GitHub Pages) → el QR toma esa dirección sola.
-  2. O pega la URL en el campo de abajo.
-  3. Imprime (Ctrl+P) y pega la etiqueta NFC detrás de la zona marcada.
+  El QR es el método principal por ahora (el NFC llega después).
+  - El QR se genera a partir de URL_PUBLICA (js/config.js) + «index.html?src=qr»,
+    así funciona igual aunque abras esta página en tu compu.
+  - Botones para descargar el QR en PNG (2048 px) y SVG, para imprenta.
+  - Más abajo está la dirección para grabar en el chip NFC (…?src=nfc).
+  - Imprime con Ctrl+P (10 × 15 cm) y pega la etiqueta NFC detrás de la zona punteada.
 -->
 <html lang="es">
 <head>
@@ -19,10 +21,13 @@
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <style>
     body { padding: 24px 16px; color: var(--tinta); }
-    .controles { max-width: 520px; margin: 0 auto 24px; display: grid; gap: 10px; }
-    .controles label { font-size: 13px; opacity: .8; }
-    .controles input { min-height: 48px; border-radius: 999px; border: 1.5px solid rgba(6, 98, 174, .3); background: #fff; color: var(--tinta); padding: 0 18px; font: 15px var(--texto); }
+    .controles { max-width: 520px; margin: 0 auto 24px; display: grid; gap: 12px; }
+    .controles h2 { margin: 6px 0 0; font: 600 13px var(--texto); letter-spacing: .08em; text-transform: uppercase; color: var(--azul); }
+    .direccion { display: flex; align-items: center; gap: 8px; background: #fff; border: 1.5px solid rgba(6, 98, 174, .25); border-radius: 16px; padding: 6px 6px 6px 14px; }
+    .direccion code { flex: 1; min-width: 0; overflow-wrap: anywhere; font: 13px/1.4 ui-monospace, Consolas, monospace; }
+    .direccion button { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 0; background: var(--hielo); color: var(--azul); font: 600 12px var(--texto); cursor: pointer; white-space: nowrap; }
     .controles .acciones { justify-content: space-between; }
+    .nota { margin: 0; font-size: 13px; color: var(--gris); }
 
     /* La placa: 10 x 15 cm al imprimir */
     .placa {
@@ -43,9 +48,10 @@
     }
     .nfc svg { width: 52px; height: 52px; color: var(--blanco); }
     .nfc p { margin: 4px 0 0; font: 600 13px var(--texto); letter-spacing: .1em; text-transform: uppercase; }
-    .qr { background: #fff; border-radius: 16px; padding: 8px; width: 120px; }
+    /* El QR es el método principal: más grande. Su margen blanco (4 módulos) viene dentro del SVG. */
+    .qr { background: #fff; border-radius: 16px; overflow: hidden; padding: 0 0 8px; width: 150px; }
     .qr svg { width: 100%; height: auto; display: block; }
-    .qr-texto { font-size: 10px; text-align: center; color: var(--tinta); margin: 4px 0 0; letter-spacing: .06em; text-transform: uppercase; }
+    .qr-texto { font-size: 10px; text-align: center; color: var(--tinta); margin: 0; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
 
     @media print {
       @page { size: 10cm 15cm; margin: 0; }
@@ -57,11 +63,18 @@
 </head>
 <body>
   <div class="controles">
-    <label for="url">Dirección que abre la placa (la misma que grabas en la etiqueta NFC)</label>
-    <input id="url" type="url" inputmode="url">
+    <h2>El QR abre</h2>
+    <div class="direccion"><code id="url-qr"></code><button type="button" data-copiar="url-qr">Copiar</button></div>
+    <div class="acciones">
+      <button class="boton-linea" id="descargar-png" type="button">Descargar QR (PNG)</button>
+      <button class="boton-linea" id="descargar-svg" type="button">Descargar QR (SVG)</button>
+    </div>
+    <h2>Para grabar en el chip NFC (más adelante)</h2>
+    <div class="direccion"><code id="url-nfc"></code><button type="button" data-copiar="url-nfc">Copiar</button></div>
+    <p class="nota">Con la app NFC Tools: Escribir → Añadir registro → URL → pega esta dirección.</p>
     <div class="acciones">
       <a class="boton-linea" href="index.html">← Volver</a>
-      <button class="boton-ar-grande" type="button" onclick="window.print()" style="padding-right:26px">Imprimir placa</button>
+      <button class="boton-ar-grande" type="button" id="imprimir" style="padding-right:26px">Imprimir placa</button>
     </div>
   </div>
 
@@ -84,24 +97,85 @@
       </div>
       <div class="qr">
         <div id="qr" role="img" aria-label="Código QR que abre la Vitrina Digital"></div>
-        <p class="qr-texto">o escanea</p>
+        <p class="qr-texto">Escanea con la cámara</p>
       </div>
     </div>
   </article>
 
-  <script>
-    const campo = document.getElementById('url');
-    // Por defecto: la página de inicio en la misma dirección donde está publicada esta placa
-    campo.value = new URL('index.html', location.href).href;
+  <script type="module">
+    import { urlDeLaPlaca } from './js/config.js';
 
-    function dibujarQR() {
-      const qr = qrcode(0, 'M');           // 0 = tamaño automático, M = corrección de errores media
-      qr.addData(campo.value.trim());
-      qr.make();
-      document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    const URL_QR = urlDeLaPlaca('qr');     // https://dianapapo.github.io/vitrina-digital/index.html?src=qr
+    const URL_NFC = urlDeLaPlaca('nfc');
+    const MARGEN = 4;                      // margen blanco obligatorio del QR: 4 módulos
+
+    document.getElementById('url-qr').textContent = URL_QR;
+    document.getElementById('url-nfc').textContent = URL_NFC;
+
+    // qrcode(0, 'M'): 0 = tamaño automático, M = corrección de errores media (resiste ~15 % de daño)
+    const qr = qrcode(0, 'M');
+    qr.addData(URL_QR);
+    qr.make();
+    const modulos = qr.getModuleCount();
+
+    /** SVG del QR, con fondo blanco y el margen incluido. «lado» = tamaño en píxeles. */
+    function svgDelQR(lado) {
+      const total = modulos + MARGEN * 2;
+      let cuadros = '';
+      for (let f = 0; f < modulos; f++) {
+        for (let c = 0; c < modulos; c++) {
+          if (qr.isDark(f, c)) cuadros += `M${c + MARGEN} ${f + MARGEN}h1v1h-1z`;
+        }
+      }
+      return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${total} ${total}" width="${lado}" height="${lado}" shape-rendering="crispEdges">` +
+        `<title>QR: ${URL_QR}</title><rect width="${total}" height="${total}" fill="#fff"/>` +
+        `<path d="${cuadros}" fill="#000"/></svg>`;
     }
-    campo.addEventListener('input', dibujarQR);
-    dibujarQR();
+    document.getElementById('qr').innerHTML = svgDelQR(150);
+    document.getElementById('qr').dataset.url = URL_QR;
+
+    function descargar(blob, nombre) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nombre;
+      document.body.append(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+
+    // SVG: vectorial, se imprime nítido a cualquier tamaño
+    document.getElementById('descargar-svg').addEventListener('click', () => {
+      descargar(new Blob([svgDelQR(1024)], { type: 'image/svg+xml' }), 'qr-vitrina-digital.svg');
+    });
+
+    // PNG de alta resolución (2048 px aprox.): cada módulo es un número entero de píxeles
+    document.getElementById('descargar-png').addEventListener('click', () => {
+      const total = modulos + MARGEN * 2;
+      const px = Math.ceil(2048 / total);
+      const lienzo = document.createElement('canvas');
+      lienzo.width = lienzo.height = total * px;
+      const ctx = lienzo.getContext('2d');
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+      ctx.fillStyle = '#000';
+      for (let f = 0; f < modulos; f++) {
+        for (let c = 0; c < modulos; c++) {
+          if (qr.isDark(f, c)) ctx.fillRect((c + MARGEN) * px, (f + MARGEN) * px, px, px);
+        }
+      }
+      lienzo.toBlob(blob => descargar(blob, 'qr-vitrina-digital.png'), 'image/png');
+    });
+
+    // Copiar direcciones
+    document.querySelectorAll('[data-copiar]').forEach(boton => boton.addEventListener('click', async () => {
+      const texto = document.getElementById(boton.dataset.copiar).textContent;
+      try { await navigator.clipboard.writeText(texto); boton.textContent = '¡Copiado!'; }
+      catch { boton.textContent = 'Selecciónalo'; }
+      setTimeout(() => { boton.textContent = 'Copiar'; }, 2000);
+    }));
+
+    document.getElementById('imprimir').addEventListener('click', () => window.print());
   </script>
 </body>
 </html>
