@@ -1,0 +1,309 @@
+{
+  "_instrucciones": "ESTE ES EL ÚNICO ARCHIVO QUE EL DOCENTE EDITA CADA SEMESTRE. Cambia textos, imágenes y modelos aquí; no hace falta tocar el código. Los textos marcados como [EJEMPLO] deben reemplazarse con la ficha real del estudiante.",
+  "carreras": [
+    {
+      "id": "arquitectura",
+      "nombre": "Arquitectura",
+      "descripcion": "Maquetas, planos y proyectos urbanos de nuestros estudiantes.",
+      "icono": "arquitectura",
+      "orden": 1
+    },
+    {
+      "id": "multimedia",
+      "nombre": "Multimedia y Producción Audiovisual",
+      "descripcion": "Cortometrajes, animación, fotografía y diseño interactivo.",
+      "icono": "multimedia",
+      "orden": 2
+    }
+  ],
+  "proyectos": [
+    {
+      "id": "mi-casa-mi-futuro",
+      "carrera": "arquitectura",
+      "titulo": "Mi casa, mi futuro",
+      "ubicacion": "Chongón, Guayas",
+      "estudiante": "Arllys Ramos",
+      "materia": "Fundamentos de Arquitectura 1",
+      "periodo": "2026-2",
+      "descripcion": "[EJEMPLO] Vivienda unifamiliar de dos plantas construida sobre un terreno en pendiente: la cochera aprovecha el nivel más bajo, los volúmenes blancos se abren con grandes ventanales hacia la piscina y las terrazas se escalonan siguiendo el terreno.",
+      "imagenes": [
+        {
+          "src": "img/mi-casa-render.webp",
+          "alt": "Vista 3D de la maqueta: casa blanca de dos plantas sobre un terreno en pendiente, con cochera, entrada revestida en piedra y madera, terraza con baranda de vidrio y piscina"
+        },
+        {
+          "src": "img/mi-casa-2.svg",
+          "alt": "Planta arquitectónica de la planta baja con sala, cocina y área social"
+        }
+      ],
+      "creditoModelo": {
+        "titulo": "Modern Coastal Hillside Villa",
+        "autor": "Visthétique",
+        "plataforma": "Sketchfab",
+        "url": "https://skfb.ly/pKVRs",
+        "licencia": "CC BY 4.0",
+        "licenciaUrl": "https://creativecommons.org/licenses/by/4.0/",
+        "cambios": "Para la vitrina se quitaron el auto, los árboles del borde del lote y la grifería, se simplificó la geometría y se optimizaron las texturas para celular."
+      },
+      "ar": {
+        "modelo": "modelos/mi-casa-mi-futuro.glb",
+        "modeloIOS": "",
+        "escala": "aprox. 1:60",
+        "camara": "25deg 58deg 55%",
+        "alt": "Maqueta 3D de una casa blanca de dos plantas sobre un terreno en pendiente, con cochera, terrazas, ventanales y piscina",
+        "puntos": [
+          {
+            "id": "terraza",
+            "titulo": "Terraza sobre la cochera",
+            "texto": "[EJEMPLO] La cochera está en el nivel más bajo del terreno y su techo se aprovecha como terraza, protegida con una baranda de vidrio.",
+            "posicion": "-0.063 0.076 0.099",
+            "normal": "0 1 0"
+          },
+          {
+            "id": "ventanal",
+            "titulo": "Ventanales hacia la piscina",
+            "texto": "[EJEMPLO] Las dos plantas se abren con ventanales de piso a techo hacia la piscina: entra luz natural todo el día y el interior se conecta con la terraza.",
+            "posicion": "0.005 0.080 -0.036",
+            "normal": "0 0 -1"
+          },
+          {
+            "id": "piscina",
+            "titulo": "Piscina y terraza posterior",
+            "texto": "[EJEMPLO] La piscina está junto a la terraza posterior, con tumbonas y un comedor exterior al mismo nivel de la sala.",
+            "posicion": "0.062 0.056 -0.158",
+            "normal": "0 1 0"
+          }
+        ]
+      },
+      "asistente": {
+        "sugeridas": [
+          "¿Por qué los ventanales son tan grandes?",
+          "¿Dónde está la cochera?",
+          "¿Cuántos dormitorios tiene?"
+        ],
+        "pasajes": [
+          {
+            "punto": "ventanal",
+            "texto": "[EJEMPLO] Los ventanales van de piso a techo y miran hacia la piscina, para tener luz natural todo el día y vista al jardín.",
+            "claves": [
+              "ventanal",
+              "ventanales",
+              "ventana",
+              "vidrio",
+              "luz",
+              "iluminación",
+              "grande",
+              "vista"
+            ]
+          },
+          {
+            "punto": "ventanal",
+            "texto": "[EJEMPLO] La sala, el comedor y la cocina forman un solo espacio abierto detrás de los ventanales.",
+            "claves": [
+              "sala",
+              "comedor",
+              "cocina",
+              "espacio",
+              "abierto",
+              "planta baja"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "[EJEMPLO] Los volúmenes son blancos y lisos; la entrada principal se marca con un muro revestido en piedra y una puerta de madera.",
+            "claves": [
+              "madera",
+              "piedra",
+              "material",
+              "materiales",
+              "revestimiento",
+              "fachada",
+              "color",
+              "blanco",
+              "entrada",
+              "puerta"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "[EJEMPLO] La planta alta tiene tres dormitorios: uno principal con baño propio y dos dormitorios secundarios que comparten baño.",
+            "claves": [
+              "dormitorio",
+              "dormitorios",
+              "habitación",
+              "habitaciones",
+              "cuartos",
+              "baño",
+              "baños"
+            ]
+          },
+          {
+            "punto": "terraza",
+            "texto": "[EJEMPLO] La cochera está en el nivel más bajo, junto a la calle de acceso, y su techo se usa como terraza con baranda de vidrio.",
+            "claves": [
+              "cochera",
+              "garaje",
+              "garage",
+              "carro",
+              "auto",
+              "estacionamiento",
+              "terraza",
+              "baranda"
+            ]
+          },
+          {
+            "punto": "piscina",
+            "texto": "[EJEMPLO] La piscina está junto a la terraza posterior, con tumbonas y un comedor exterior conectados con la sala.",
+            "claves": [
+              "piscina",
+              "agua",
+              "tumbonas",
+              "jardín",
+              "área social",
+              "patio",
+              "exterior"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "[EJEMPLO] La casa se adapta a un terreno en pendiente: las terrazas y escaleras exteriores siguen la forma del cerro.",
+            "claves": [
+              "pendiente",
+              "terreno",
+              "cerro",
+              "ladera",
+              "desnivel",
+              "escalera",
+              "escaleras"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "[EJEMPLO] La vivienda tiene 180 m² de construcción en un terreno de 400 m² en Chongón.",
+            "claves": [
+              "metros",
+              "m2",
+              "tamaño",
+              "área",
+              "terreno",
+              "grande",
+              "superficie",
+              "cuánto mide"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "[EJEMPLO] La ventilación es cruzada: las ventanas están en fachadas opuestas para que el aire circule sin aire acondicionado.",
+            "claves": [
+              "ventilación",
+              "aire",
+              "calor",
+              "clima",
+              "fresco",
+              "sostenible",
+              "sustentable"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "El proyecto lo diseñó la estudiante Arllys Ramos en la materia Fundamentos de Arquitectura 1.",
+            "claves": [
+              "materia",
+              "curso",
+              "taller",
+              "periodo",
+              "semestre",
+              "autor",
+              "estudiante",
+              "hizo",
+              "diseñó"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "cuentos-y-espias",
+      "carrera": "multimedia",
+      "titulo": "Bienvenidos a Cuentos y Espías",
+      "ubicacion": "Campus Samborondón",
+      "estudiante": "Diana Espinoza",
+      "materia": "Efectos Audiovisuales",
+      "periodo": "APE1 · 2026-2",
+      "descripcion": "Video de motion graphics con tipografía animada para la canción «Bienvenidos a Cuentos y Espías». La letra la escribió la estudiante Diana Espinoza y la música se generó con Suno AI para un concurso de webtoon; después la estudiante la convirtió en su proyecto universitario. Un televisor retro, rayas de colores, siluetas de ciudad y personajes animados acompañan cada verso. Duración: 1 min 07 s.",
+      "imagenes": [
+        {
+          "src": "img/cuentos-y-espias-45s.jpg",
+          "alt": "Televisor retro sobre fondo de rayas de colores con el título Cuentos y Espías en letras amarillas"
+        },
+        {
+          "src": "img/cuentos-y-espias-3s.jpg",
+          "alt": "Televisor retro con el crédito Letra creada por Diana Espinoza"
+        },
+        {
+          "src": "img/cuentos-y-espias-30s.jpg",
+          "alt": "Siluetas de personas frente a una ciudad nocturna con las palabras Un gran equipo"
+        }
+      ],
+      "video": "videos/cuentos-y-espias.mp4",
+      "poster": "img/cuentos-y-espias-45s.jpg",
+      "ar": {
+        "tipo": "video",
+        "modelo": "modelos/pantalla-cine.glb",
+        "modeloIOS": "",
+        "escala": "60 cm de ancho",
+        "alt": "Televisor retro azul con una pantalla de cine 16:9 que reproduce el video Cuentos y Espías",
+        "puntos": []
+      },
+      "creditos": {
+        "letra": "Diana Espinoza",
+        "musica": "Generada con Suno AI a partir de la letra de la estudiante",
+        "origen": "Concurso de webtoon; luego proyecto universitario (Efectos Audiovisuales, APE1)",
+        "animacion": "Diana Espinoza"
+      },
+      "subtitulos": "videos/cuentos-y-espias.es.vtt",
+      "letra": [
+        {
+          "seccion": "Verso 1",
+          "lineas": [
+            "Entra al cuento, se va a romper",
+            "Una espía lo viene a tejer",
+            "Giran los hilos sin control",
+            "¿Quién está tras del telón?"
+          ]
+        },
+        {
+          "seccion": "Verso 2",
+          "lineas": [
+            "Cielos de papel, tinta sin ley",
+            "Un pato jefe que mantiene el control",
+            "Un gran equipo que sabe mentir",
+            "Corre, o el final te va a seguir..."
+          ]
+        },
+        {
+          "seccion": "Pre-Coro",
+          "lineas": [
+            "No todo villano es cruel (¡cruel!)",
+            "No todo héroe es fiel (¡fiel!)",
+            "Ella escribe lo que se fue",
+            "Corrigiendo lo que no se ve..."
+          ]
+        },
+        {
+          "seccion": "Coro",
+          "lineas": [
+            "¡Cuentos y Espías! (¡pa-pa-pa!)",
+            "Bailan secretos bajo un antifaz",
+            "Rompe el guion, sin mirar atrás",
+            "Un error y el cuento se fracturará",
+            "¡Cuentos y Espías! (¡ja-ja-ja!)",
+            "Cazan mentiras en espiral",
+            "Entre códigos y tu antifaz",
+            "La verdad es el gran disfraz..."
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,171 @@
+<!doctype html>
+<!--
+  PASO 5 DEL FLUJO: la experiencia de realidad aumentada.
+  URL: ar.html?id=mi-casa-mi-futuro   → maqueta con puntos y asistente (js/ar.js)
+       ar.html?id=cuentos-y-espias    → pantalla de cine con video y letra (js/ar-video.js)
+
+  Todo gira alrededor de <model-viewer>, un componente web de Google:
+    - En la compu o antes de entrar a AR: visor 3D que se puede girar con el dedo.
+    - Al tocar «Ver en mi espacio»: abre la cámara, detecta la mesa o el piso
+      y coloca la maqueta a escala. La persona puede caminar alrededor.
+  Los puntos de información (hotspots) y el asistente son botones HTML que
+  model-viewer "pega" a coordenadas 3D del modelo.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="icon" href="img/icono.svg" type="image/svg+xml">
+  <title>Ver en AR · Vitrina Digital Ecotec</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#0662AE">
+  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/ar.css">
+  <!-- La librería de AR. Una sola línea, sin instalar nada. -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+</head>
+<body class="pagina-ar">
+
+  <header class="barra-ar">
+    <a class="volver-ar" id="volver" href="index.html" aria-label="Volver a la ficha del proyecto"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></a>
+    <div>
+      <p class="barra-sub" id="escala">Maqueta</p>
+      <h1 class="barra-titulo" id="titulo">Cargando…</h1>
+    </div>
+  </header>
+
+  <!--
+    ATRIBUTOS CLAVE DE <model-viewer>:
+      ar                       → activa la realidad aumentada
+      ar-modes                 → orden de preferencia:
+                                 webxr       = AR dentro de Chrome Android (muestra hotspots y paneles)
+                                 scene-viewer = app de AR de Google (respaldo en Android)
+                                 quick-look  = AR nativa de iPhone (Safari)
+      ar-placement="floor"     → busca superficies horizontales (mesa o piso)
+      ar-scale="auto"          → la persona puede agrandar/achicar con dos dedos
+      camera-controls          → girar el modelo con el dedo en modo 3D
+      src / ios-src            → se rellenan desde el JSON con JavaScript
+  -->
+  <model-viewer
+    id="visor"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-placement="floor"
+    ar-scale="auto"
+    camera-controls
+    touch-action="pan-y"
+    shadow-intensity="1"
+    exposure="1"
+    camera-orbit="30deg 65deg auto"
+    interaction-prompt="auto"
+    alt="Maqueta 3D del proyecto">
+
+    <!-- Barra de carga del modelo -->
+    <div slot="progress-bar" class="progreso" aria-hidden="true"><div class="progreso-relleno" id="progreso"></div></div>
+
+    <!-- Botón propio para entrar a AR (reemplaza al de Google) -->
+    <button slot="ar-button" class="boton-ar" type="button">
+      Ver en mi espacio
+      <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+    </button>
+
+    <!-- Instrucción que aparece mientras se busca la superficie (onboarding AR) -->
+    <div slot="ar-prompt" class="ar-guia" aria-live="polite">
+      <div class="ar-guia-mano" aria-hidden="true">📱</div>
+      <p>Apunta a una mesa o al piso y mueve el celular despacio de lado a lado</p>
+    </div>
+
+    <!-- Aquí ar.js inserta los puntos de información (slot="hotspot-…") -->
+
+    <!-- Mensajes de estado de la AR (se ven también dentro de la AR en Android) -->
+    <p class="estado-ar" id="estado" role="status" hidden></p>
+
+    <!-- Tarjeta inferior: explica el punto tocado o la respuesta del asistente -->
+    <section class="tarjeta-info" id="tarjeta-info" hidden aria-live="polite">
+      <button class="cerrar" id="cerrar-info" type="button" aria-label="Cerrar">×</button>
+      <p class="tarjeta-info-tipo" id="info-tipo">Punto de información</p>
+      <h2 id="info-titulo"></h2>
+      <p id="info-texto"></p>
+    </section>
+
+    <!-- Asistente: «Pregúntale a la maqueta» (AA3) -->
+    <button class="boton-asistente" id="abrir-asistente" type="button" aria-expanded="false" aria-controls="asistente">
+      💬 Pregúntale a la maqueta
+    </button>
+    <section class="asistente" id="asistente" hidden aria-label="Asistente del proyecto">
+      <button class="cerrar" id="cerrar-asistente" type="button" aria-label="Cerrar asistente">×</button>
+      <h2>Pregúntale a la maqueta</h2>
+      <div class="sugeridas" id="sugeridas"></div>
+      <form id="form-pregunta" class="form-pregunta">
+        <label for="pregunta" class="solo-lector">Tu pregunta</label>
+        <input id="pregunta" type="text" autocomplete="off" placeholder="Escribe tu pregunta…" enterkeyhint="send">
+        <button type="submit" aria-label="Preguntar">➤</button>
+      </form>
+    </section>
+
+    <!-- ===== Solo proyectos con video (Multimedia): pantalla de cine. Lo activa js/ar-video.js ===== -->
+    <!-- Botón sustituto de «Ver en mi espacio» cuando el celular no tiene WebXR (iPhone, computadora) -->
+    <button class="boton-ar" id="abrir-cine" type="button" hidden>
+      Ver con la letra
+      <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span>
+    </button>
+
+    <!-- Si el navegador bloquea el sonido, el video arranca en silencio y aparece esto -->
+    <button class="activar-sonido" id="activar-sonido" type="button" hidden>🔊 Activar sonido</button>
+
+    <section class="cine" id="cine" hidden aria-label="Controles del video">
+      <!-- Letra (karaoke). Es decorativa para lectores de pantalla: la letra completa está en la ficha. -->
+      <div class="karaoke" id="karaoke" aria-hidden="true">
+        <p class="karaoke-seccion" hidden></p>
+        <p class="karaoke-linea anterior"></p>
+        <p class="karaoke-linea actual"></p>
+      </div>
+      <div class="cine-controles">
+        <div class="cine-fila">
+          <button class="cine-boton principal" id="cine-play" type="button" aria-label="Reproducir" data-estado="pausado">
+            <svg class="si-pausado" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+            <svg class="si-reproduciendo" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor"/></svg>
+          </button>
+          <button class="cine-boton" id="cine-sonido" type="button" aria-label="Silenciar" aria-pressed="true" data-estado="sonido">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/><path class="si-sonido" d="M16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/><path class="si-silencio" d="m16 9 5 6M21 9l-5 6"/></svg>
+          </button>
+          <button class="cine-boton" id="cine-reiniciar" type="button" aria-label="Reiniciar el video">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v6h6"/><path d="M5.5 15a7 7 0 1 0 1.6-7.3L4 10"/></svg>
+          </button>
+          <button class="cine-boton-texto" id="cine-letra" type="button" aria-pressed="true"><span>Ocultar letra</span></button>
+        </div>
+        <div class="cine-fila">
+          <label class="solo-lector" for="cine-progreso">Progreso del video</label>
+          <input class="cine-progreso" id="cine-progreso" type="range" min="0" max="1000" step="1" value="0">
+          <span class="cine-tiempo" id="cine-tiempo">0:00 / 0:00</span>
+          <button class="cine-boton" id="cine-completo-abrir" type="button" aria-label="Ver a pantalla completa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+  </model-viewer>
+
+  <!-- Reproductor propio a pantalla completa (iPhone y dispositivos sin WebXR). Usa el MISMO video. -->
+  <div class="cine-completo" id="cine-completo" role="dialog" aria-modal="true" aria-label="Video a pantalla completa" hidden>
+    <div class="cine-completo-barra">
+      <p class="cine-completo-aviso" id="cine-completo-aviso"></p>
+      <button class="cine-boton" id="cine-completo-cerrar" type="button" aria-label="Cerrar pantalla completa">×</button>
+    </div>
+    <div class="cine-completo-video" id="cine-completo-video"></div>
+    <div class="cine-completo-cuerpo" id="cine-completo-cuerpo"></div>
+  </div>
+  <!-- Aquí «espera» el video (invisible) cuando no está a pantalla completa -->
+  <div class="video-estacionamiento" id="video-estacionamiento" aria-hidden="true"></div>
+
+  <!-- Aviso para computadoras / celulares sin AR -->
+  <p class="aviso-sin-ar" id="aviso-sin-ar" hidden>
+    Estás viendo el modelo en 3D. Para ponerlo sobre una mesa, abre esta página en un celular
+    (Chrome en Android o Safari en iPhone).
+  </p>
+
+  <script type="module" src="js/ar.js"></script>
+</body>
+</html>

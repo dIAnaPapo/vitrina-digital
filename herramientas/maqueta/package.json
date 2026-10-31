@@ -1,0 +1,14 @@
+{
+  "name": "optimizar-maqueta",
+  "private": true,
+  "description": "Optimiza el .glb de Arquitectura para celular. Paso 1: node optimizar.mjs original.glb intermedio.glb 0.68 0.25 0.002 · Paso 2: node texturas.mjs intermedio.glb ../../modelos/mi-casa-mi-futuro.glb 1024",
+  "type": "module",
+  "dependencies": {
+    "@gltf-transform/core": "4.2.1",
+    "@gltf-transform/extensions": "4.2.1",
+    "@gltf-transform/functions": "4.2.1",
+    "draco3dgltf": "1.5.7",
+    "meshoptimizer": "0.22.0",
+    "sharp": "0.35.5"
+  }
+}

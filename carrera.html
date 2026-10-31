@@ -1,0 +1,111 @@
+<!doctype html>
+<!--
+  PANTALLA 2 · Proyectos de una carrera.
+  URL: carrera.html?c=arquitectura  (o ?c=multimedia)
+  Se llega tocando una tarjeta de «Elige una carrera» en el inicio.
+  También se puede grabar esta URL en la placa de un aula para abrir directo su carrera.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="img/icono.svg" type="image/svg+xml">
+  <title>Carrera · Vitrina Digital Ecotec</title>
+  <meta name="theme-color" content="#0662AE">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div class="marco">
+  <header class="hero ficha-hero carrera-hero">
+    <img class="hero-fondo" id="fondo" alt="" hidden>
+    <nav class="nav" aria-label="Principal">
+      <a class="logo" href="index.html">
+        <span class="logo-marca" id="logo-icono"></span>
+        <span class="logo-texto">VITRINA DIGITAL<img class="logo-ecotec" src="img/logo-ecotec-blanco.svg" alt="Universidad Ecotec"></span>
+      </a>
+      <div class="nav-enlaces"><a href="index.html#carreras">Carreras</a><a href="index.html#como">Cómo funciona</a><a href="placa.html">La placa</a></div>
+    </nav>
+
+    <div class="hero-cuerpo" style="display:block">
+      <a class="volver" href="index.html#carreras">← Todas las carreras</a>
+      <p class="ubicacion" id="contador">Carrera</p>
+      <h1 class="display" id="titulo">…</h1>
+      <p class="hero-descripcion" id="descripcion"></p>
+    </div>
+  </header>
+
+  <main class="seccion" id="contenido" aria-live="polite">
+    <h2 class="etiqueta-lateral" style="margin-bottom:20px">Proyectos de<br>la carrera</h2>
+    <ul class="proyectos" id="lista-proyectos"><li>Cargando proyectos…</li></ul>
+
+    <!-- Para seguir explorando sin volver al inicio -->
+    <div class="otras-carreras" id="otras" hidden>
+      <p>¿Quieres ver otra carrera?</p>
+      <div class="chips" id="otras-chips"></div>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <span>Universidad Ecotec · Experiencias Inmersivas</span>
+    <a href="index.html#carreras">Ver todas las carreras</a>
+  </footer>
+</div>
+
+<script type="module">
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos } from './js/datos.js';
+  document.getElementById('logo-icono').innerHTML = iconos.ar;
+
+  try {
+    const datos = await cargarDatos();
+    const carrera = datos.carreras.find(c => c.id === leerParametro('c'));
+    if (!carrera) throw new Error('Carrera no encontrada');
+    const proyectos = datos.proyectos.filter(p => p.carrera === carrera.id);
+
+    document.title = `${carrera.nombre} · Vitrina Digital Ecotec`;
+    document.getElementById('titulo').textContent = carrera.nombre;
+    document.getElementById('descripcion').textContent = carrera.descripcion;
+    document.getElementById('contador').textContent = `Carrera · ${textoProyectos(proyectos.length)}`;
+
+    const fondo = proyectos.find(p => p.imagenes?.[0])?.imagenes[0].src;
+    if (fondo) {
+      const img = document.getElementById('fondo');
+      img.src = fondo;
+      img.hidden = false;
+    }
+
+    // Tarjetas de proyecto (mismo diseño que antes tenía el inicio)
+    document.getElementById('lista-proyectos').innerHTML = proyectos.map(p => `
+      <li>
+        <a class="proyecto" href="proyecto.html?id=${encodeURIComponent(p.id)}">
+          <img src="${escapar(p.imagenes[0]?.src)}" alt="" loading="lazy">
+          <div class="proyecto-cabeza">
+            <span class="icono">${iconos[carrera.icono] ?? iconos.ar}</span>
+            <h3>${escapar(p.titulo)}</h3>
+          </div>
+          <div class="proyecto-pie">
+            <div>
+              <p>${[p.estudiante, p.materia].map(t => (t ?? '').replace('[EJEMPLO]', '').trim()).filter(Boolean).map(escapar).join(' · ')}</p>
+              ${p.ar ? `<span class="sello-ar">${iconos.ar.replace('<svg', '<svg width="12" height="12"')} DISPONIBLE EN AR</span>` : ''}
+            </div>
+            <span class="circulo">${iconos.flecha}</span>
+          </div>
+        </a>
+      </li>`).join('') || '<li>Esta carrera todavía no tiene proyectos.</li>';
+
+    // Atajos a las otras carreras
+    const otras = carrerasOrdenadas(datos).filter(c => c.id !== carrera.id);
+    if (otras.length) {
+      document.getElementById('otras-chips').innerHTML = otras.map(c =>
+        `<a class="chip chip-claro" href="carrera.html?c=${encodeURIComponent(c.id)}">${escapar(c.nombre)}</a>`).join('');
+      document.getElementById('otras').hidden = false;
+    }
+  } catch (e) {
+    mostrarError('No encontramos esa carrera.');
+    console.error(e);
+  }
+</script>
+</body>
+</html>

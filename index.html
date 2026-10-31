@@ -1,0 +1,170 @@
+<!doctype html>
+<!--
+  PANTALLA 1 · Lo que abre la placa NFC (o el QR).
+  Debajo del hero está «Elige una carrera»: dos tarjetas grandes y separadas
+  (Arquitectura / Multimedia) que llevan a carrera.html?c=…
+  Los chips del hero son atajos a las mismas carreras.
+  Compatibilidad: index.html?c=arquitectura redirige a carrera.html?c=arquitectura.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="img/icono.svg" type="image/svg+xml">
+  <title>Vitrina Digital Ecotec</title>
+  <meta name="description" content="Proyectos estudiantiles de Ecotec, con maquetas en realidad aumentada.">
+  <meta name="theme-color" content="#0662AE">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+</head>
+<body>
+<div class="marco">
+
+  <!-- ================= HERO OSCURO ================= -->
+  <header class="hero">
+    <nav class="nav" aria-label="Principal">
+      <a class="logo" href="index.html">
+        <span class="logo-marca" id="logo-icono"></span>
+        <span class="logo-texto">VITRINA DIGITAL<img class="logo-ecotec" src="img/logo-ecotec-blanco.svg" alt="Universidad Ecotec"></span>
+      </a>
+      <div class="nav-enlaces">
+        <a href="#carreras">Carreras</a>
+        <a href="#como">Cómo funciona</a>
+        <a href="placa.html">La placa</a>
+      </div>
+    </nav>
+
+    <div class="hero-cuerpo">
+      <p class="display lema subrayado">Proyectos reales.<br>En tu espacio.</p>
+
+      <!-- Maqueta destacada girando: anticipa la AR desde el primer segundo -->
+      <model-viewer class="hero-modelo" id="hero-modelo"
+        auto-rotate rotation-per-second="18deg" interaction-prompt="none"
+        disable-zoom disable-pan shadow-intensity="1.2" exposure="1.1"
+        camera-orbit="30deg 70deg auto" alt="Maqueta 3D del proyecto destacado girando"></model-viewer>
+
+      <h1 class="display">Vitrina<br>digital<br>en Ecotec</h1>
+    </div>
+
+    <div class="hero-pie">
+      <div class="datos-rapidos">
+        <div class="dato dato-blanco">
+          <p><span id="icono-nfc"></span> Proyectos en<br>esta aula</p>
+          <strong id="total-proyectos">–</strong>
+        </div>
+        <a class="dato dato-azul" id="destacado-enlace" href="#carreras">
+          <span class="fila"><p>Ver en AR</p><span id="flecha-azul"></span></span>
+          <p>Maquetas a escala sobre tu mesa, sin instalar apps.</p>
+        </a>
+      </div>
+      <!-- Atajos a cada carrera (se rellenan desde el JSON) -->
+      <nav class="chips" aria-label="Ir directo a una carrera" id="atajos"></nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= ELIGE UNA CARRERA ================= -->
+    <section class="seccion" id="carreras" aria-labelledby="titulo-carreras">
+      <div class="seccion-cabeza">
+        <svg class="asterisco" viewBox="0 0 40 40" aria-hidden="true"><g stroke="currentColor" stroke-width="5" stroke-linecap="round"><path d="M20 3v34M3 20h34M8 8l24 24M32 8 8 32"/></g></svg>
+        <p class="display">Escanea.<br>Explora.<span class="burbujas" aria-hidden="true"><span></span><span></span></span><br><span class="suave">Ve en AR.</span></p>
+        <p class="esquina">El aula se convierte<br>en vitrina</p>
+      </div>
+
+      <h2 class="etiqueta-lateral" id="titulo-carreras" style="margin-bottom:20px">Elige una<br>carrera</h2>
+      <ul class="carreras" id="lista-carreras" aria-live="polite"><li>Cargando carreras…</li></ul>
+    </section>
+
+    <!-- ================= CÓMO FUNCIONA ================= -->
+    <section class="seccion" id="como" aria-labelledby="titulo-como" style="padding-top:0">
+      <div class="seccion-cabeza">
+        <span></span>
+        <h2 class="display" id="titulo-como" style="font-size:clamp(32px,8vw,48px)">Cómo<br><span class="suave">funciona</span></h2>
+      </div>
+      <ol class="pasos">
+        <li><h3>Acerca tu celular</h3><p>A la placa NFC o escanea el QR que está fuera del aula.</p></li>
+        <li><h3>Elige una carrera</h3><p>Arquitectura o Multimedia, y luego el proyecto que quieras ver.</p></li>
+        <li><h3>Lee la ficha</h3><p>Estudiante, materia, imágenes. También puedes escucharla.</p></li>
+        <li><h3>Míralo en AR</h3><p>El proyecto aparece sobre tu mesa: una maqueta a escala o una pantalla de cine.</p></li>
+      </ol>
+    </section>
+
+    <div class="frase">
+      <p class="display">Tú escaneas.<br><span class="suave">El aula se exhibe.</span></p>
+      <a class="circulo" href="#carreras" aria-label="Volver a las carreras" id="frase-flecha" style="color:var(--tinta)"></a>
+    </div>
+  </main>
+
+  <footer class="pie">
+    <span>Universidad Ecotec · Experiencias Inmersivas</span>
+    <span>Diana Espinoza · Arllys Ramos · Xavier Ponce</span>
+  </footer>
+</div>
+
+<script type="module">
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos } from './js/datos.js';
+
+  // Enlaces viejos con filtro (index.html?c=arquitectura) → página de la carrera
+  if (leerParametro('c')) location.replace(`carrera.html${location.search}`);
+
+  // Íconos decorativos
+  document.getElementById('logo-icono').innerHTML = iconos.ar;
+  ['frase-flecha', 'flecha-azul'].forEach(id => document.getElementById(id).innerHTML = iconos.flecha);
+
+  try {
+    const datos = await cargarDatos();
+    const carreras = carrerasOrdenadas(datos);
+
+    document.getElementById('total-proyectos').textContent = String(datos.proyectos.length).padStart(2, '0');
+
+    // Proyecto destacado = el primero con AR
+    const destacado = datos.proyectos.find(p => p.ar);
+    if (destacado) {
+      const hero = document.getElementById('hero-modelo');
+      hero.alt = destacado.ar.alt;
+      // La maqueta pesa ~8 MB: se descarga DESPUÉS de que la página terminó de cargar,
+      // para que las carreras aparezcan rápido (H1). Si el celular está en «ahorro de datos», no se descarga.
+      const cargarHero = () => { if (!navigator.connection?.saveData) hero.src = destacado.ar.modelo; };
+      document.readyState === 'complete' ? cargarHero() : addEventListener('load', cargarHero, { once: true });
+      document.getElementById('destacado-enlace').href = `proyecto.html?id=${encodeURIComponent(destacado.id)}`;
+    }
+
+    const enlaceCarrera = (c) => `carrera.html?c=${encodeURIComponent(c.id)}`;
+
+    // Atajos del hero (chips)
+    document.getElementById('atajos').innerHTML = carreras.map(c =>
+      `<a class="chip" href="${enlaceCarrera(c)}">${escapar(c.nombre)}</a>`).join('');
+
+    // «Elige una carrera»: una tarjeta grande por carrera.
+    // De fondo usa la primera imagen de un proyecto de esa carrera (si hay).
+    document.getElementById('lista-carreras').innerHTML = carreras.map(c => {
+      const suyos = datos.proyectos.filter(p => p.carrera === c.id);
+      const fondo = suyos.find(p => p.imagenes?.[0])?.imagenes[0].src;
+      return `
+      <li>
+        <a class="carrera" href="${enlaceCarrera(c)}">
+          ${fondo ? `<img src="${escapar(fondo)}" alt="" loading="lazy">` : ''}
+          <div class="carrera-cabeza">
+            <span class="icono">${iconos[c.icono] ?? iconos.ar}</span>
+            <span class="contador">${textoProyectos(suyos.length)}</span>
+          </div>
+          <div class="carrera-pie">
+            <div>
+              <h3>${escapar(c.nombre)}</h3>
+              <p>${escapar(c.descripcion)}</p>
+            </div>
+            <span class="circulo">${iconos.flecha}</span>
+          </div>
+        </a>
+      </li>`;
+    }).join('');
+  } catch (e) {
+    mostrarError('No pudimos cargar la vitrina. Revisa tu conexión e intenta de nuevo.');
+    console.error(e);
+  }
+</script>
+</body>
+</html>

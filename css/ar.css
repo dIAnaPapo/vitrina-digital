@@ -1,0 +1,230 @@
+/* =========================================================
+   Estilos de la página de AR (ar.html)
+   ========================================================= */
+.pagina-ar { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; background: var(--azul); color: var(--blanco); }
+
+.barra-ar {
+  display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+  background: var(--azul); border-bottom: 1px solid var(--linea); z-index: 2;
+}
+.volver-ar {
+  width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%;
+  border: 1.5px solid var(--linea); text-decoration: none; color: var(--blanco); flex-shrink: 0;
+}
+.barra-sub { margin: 0; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--hielo); }
+.barra-titulo { margin: 0; font: 600 22px/1 var(--display); text-transform: uppercase; letter-spacing: -.02em; }
+
+model-viewer {
+  flex: 1; width: 100%; min-height: 0;
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(255, 255, 255, .22), transparent 60%),
+    var(--degradado);
+  --poster-color: transparent;
+  --progress-bar-color: transparent;
+}
+
+/* ---------- Barra de progreso ---------- */
+.progreso { position: absolute; top: 0; left: 0; right: 0; height: 4px; background: rgba(11, 79, 160, .15); }
+.progreso-relleno { height: 100%; width: 0; background: var(--celeste); transition: width .2s; }
+
+/* ---------- Botón «Ver en mi espacio» ---------- */
+.boton-ar {
+  position: absolute; left: 50%; bottom: 84px; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 16px;
+  min-height: 60px; padding: 6px 6px 6px 24px; border: 0; border-radius: 999px;
+  background: #fff; color: var(--azul); font: 600 14px var(--texto); letter-spacing: .06em; text-transform: uppercase;
+  box-shadow: 0 10px 30px rgba(4, 60, 120, .35); cursor: pointer; white-space: nowrap;
+}
+.boton-ar .circulo { background: var(--azul); color: #fff; border: 0; width: 46px; height: 46px;
+}
+
+/* ---------- Onboarding mientras se busca la superficie ---------- */
+.ar-guia {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(300px, 80vw); text-align: center; color: #fff;
+  background: rgba(6, 98, 174, .88); padding: 18px; border-radius: 22px; border: 1px solid var(--linea);
+}
+.ar-guia p { margin: 8px 0 0; font-size: 15px; }
+.ar-guia-mano { font-size: 40px; animation: barrido 2s ease-in-out infinite; }
+@keyframes barrido { 0%, 100% { transform: translateX(-30px) rotate(-8deg); } 50% { transform: translateX(30px) rotate(8deg); } }
+
+/* ---------- Puntos de información (hotspots) ---------- */
+.punto {
+  width: 44px; height: 44px;            /* tamaño táctil mínimo recomendado */
+  border-radius: 50%; border: 3px solid #fff;
+  background: var(--azul-vivo); color: #fff; font: 600 16px var(--display);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .35); cursor: pointer; padding: 0;
+  transition: transform .2s, background .2s, opacity .3s;
+  --min-hotspot-opacity: 0.25;
+}
+.punto:not([data-visible]) { opacity: .35; }   /* punto detrás del modelo */
+.punto::after {                                /* pulso para invitar a tocar */
+  content: ""; position: absolute; inset: -6px; border-radius: 50%;
+  border: 2px solid var(--celeste); animation: pulso 1.8s ease-out infinite;
+}
+.punto.activo { background: var(--celeste); transform: scale(1.2); z-index: 2; }
+.punto:not(.activo) .punto-etiqueta { display: none; }   /* la etiqueta solo aparece en el punto activo */
+@keyframes pulso { from { opacity: .9; transform: scale(.85); } to { opacity: 0; transform: scale(1.5); } }
+
+.punto-etiqueta {
+  position: absolute; left: 50%; bottom: 54px; transform: translateX(-50%);
+  background: rgba(255, 255, 255, .95); color: var(--tinta); white-space: nowrap;
+  font: 600 12px var(--texto); padding: 3px 10px; border-radius: 999px; pointer-events: none;
+}
+
+/* ---------- Mensajes de estado ---------- */
+.estado-ar {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+  margin: 0; padding: 8px 16px; border-radius: 999px; max-width: 90%; text-align: center;
+  background: rgba(6, 98, 174, .92); color: #fff; font-size: 14px; border: 1px solid var(--linea);
+}
+
+/* ---------- Tarjeta inferior y asistente ---------- */
+.tarjeta-info, .asistente {
+  position: absolute; left: 12px; right: 12px; bottom: 12px;
+  max-width: 560px; margin: 0 auto;
+  background: #fff; color: var(--tinta); border-radius: 22px; padding: 18px 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .25); z-index: 3;
+}
+.tarjeta-info h2, .asistente h2 { margin: 0 0 6px; font: 600 22px/1.05 var(--display); text-transform: uppercase; letter-spacing: -.02em; padding-right: 36px; }
+.tarjeta-info p { margin: 0; }
+.tarjeta-info-tipo { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--azul-vivo) !important; margin-bottom: 4px !important; font-weight: 600; }
+.cerrar {
+  position: absolute; top: 8px; right: 8px; width: 44px; height: 44px;
+  border: 0; background: transparent; font-size: 26px; color: var(--gris); cursor: pointer;
+}
+
+.boton-asistente {
+  position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%);
+  min-height: 48px; padding: 0 20px; border-radius: 999px; white-space: nowrap;
+  border: 1.5px solid rgba(255, 255, 255, .6); background: rgba(6, 98, 174, .55); color: #fff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font: 500 13px var(--texto); letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+}
+.sugeridas { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+.sugeridas button {
+  border: 1.5px solid rgba(6, 98, 174, .2); background: var(--hielo); color: var(--tinta);
+  border-radius: 999px; padding: 8px 12px; font: 500 13px var(--texto); cursor: pointer; min-height: 40px;
+}
+.form-pregunta { display: flex; gap: 8px; }
+.form-pregunta input {
+  flex: 1; min-width: 0; min-height: 48px; border: 1.5px solid rgba(11, 26, 51, .15); border-radius: 999px;
+  padding: 0 16px; font: 16px var(--texto);   /* 16px evita el zoom automático en iPhone */
+}
+.form-pregunta button {
+  width: 48px; height: 48px; border-radius: 50%; border: 0;
+  background: var(--azul-vivo); color: #fff; font-size: 18px; cursor: pointer;
+}
+
+.aviso-sin-ar { margin: 0; padding: 12px 16px; font-size: 13px; color: rgba(255,255,255,.9); background: var(--azul); border-top: 1px solid var(--linea); text-align: center; }
+
+/* Dentro de la AR (WebXR): fondo transparente para ver la cámara */
+model-viewer[ar-status="session-started"] .boton-ar,
+model-viewer[ar-status="object-placed"] .boton-ar { display: none; }
+
+/* =========================================================
+   PANTALLA DE CINE (proyectos con video). body.modo-video
+   ========================================================= */
+/* El botón de AR sube arriba para dejar abajo la letra y los controles */
+.modo-video .boton-ar { top: 16px; bottom: auto; }
+.modo-video .boton-asistente { display: none; }
+
+.cine {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  display: grid; gap: 10px; padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+}
+.cine[hidden] { display: none; }
+
+/* ---------- Letra (karaoke) ---------- */
+.karaoke { text-align: center; pointer-events: none; min-height: 96px; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; }
+.karaoke[hidden] { display: none; }
+.karaoke-seccion {
+  margin: 0 0 6px; padding: 3px 12px; border-radius: 999px;
+  background: rgba(255, 255, 255, .94); color: var(--azul);
+  font: 600 11px var(--texto); letter-spacing: .14em; text-transform: uppercase;
+}
+.karaoke-linea {
+  margin: 0; max-width: 680px; color: #fff;
+  font: 700 clamp(22px, 6.4vw, 38px)/1.08 var(--display); text-transform: uppercase; letter-spacing: -.01em;
+  /* contorno + sombra: se lee sobre la cámara, sobre el degradado y sobre el video */
+  -webkit-text-stroke: 1px rgba(0, 0, 0, .45);
+  text-shadow: 0 2px 0 rgba(0, 0, 0, .35), 0 0 14px rgba(0, 0, 0, .55);
+}
+.karaoke-linea.anterior { font-size: clamp(14px, 4vw, 20px); opacity: .6; margin-bottom: 4px; }
+.karaoke-linea:empty { display: none; }
+.palabra { display: inline-block; opacity: 0; transform: translateY(.35em); transition: opacity .28s ease-out, transform .28s ease-out; }
+.palabra.visible { opacity: 1; transform: none; }
+/* Créditos (credito-*, titulo): otro estilo */
+.karaoke.es-credito .karaoke-seccion { background: var(--celeste); color: #fff; }
+.karaoke.es-credito .karaoke-linea.actual {
+  font: italic 600 clamp(17px, 4.8vw, 26px)/1.2 var(--texto); text-transform: none; letter-spacing: 0; color: var(--hielo);
+}
+
+/* ---------- Controles ---------- */
+.cine-controles {
+  width: 100%; max-width: 560px; margin: 0 auto; display: grid; gap: 6px;
+  padding: 10px 12px; border-radius: 22px; background: rgba(255, 255, 255, .95); color: var(--tinta);
+  box-shadow: 0 10px 30px rgba(4, 60, 120, .3);
+}
+.cine-fila { display: flex; align-items: center; gap: 8px; }
+.cine-boton {
+  width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; border: 0; padding: 0;
+  display: grid; place-items: center; background: var(--hielo); color: var(--azul); cursor: pointer; font-size: 24px;
+}
+.cine-boton svg { width: 22px; height: 22px; }
+.cine-boton.principal { width: 52px; height: 52px; background: var(--azul); color: #fff; }
+.cine-boton.principal svg { width: 26px; height: 26px; }
+#cine-play[data-estado="pausado"] .si-reproduciendo,
+#cine-play[data-estado="reproduciendo"] .si-pausado,
+#cine-sonido[data-estado="sonido"] .si-silencio,
+#cine-sonido[data-estado="silencio"] .si-sonido { display: none; }
+.cine-boton-texto {
+  margin-left: auto; min-height: 44px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 1.5px solid var(--azul); background: #fff; color: var(--azul);
+  font: 600 12px var(--texto); letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+}
+.cine-boton-texto[aria-pressed="false"] { background: var(--azul); color: #fff; }
+.cine-progreso { flex: 1; min-width: 0; height: 44px; margin: 0; accent-color: var(--azul); cursor: pointer; }
+.cine-tiempo { font: 500 12px var(--texto); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Botón grande cuando el navegador bloqueó el sonido */
+.activar-sonido {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 4;
+  min-height: 64px; padding: 0 28px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #fff; color: var(--azul); font: 700 18px var(--texto); box-shadow: 0 12px 34px rgba(4, 60, 120, .45);
+}
+
+/* Dentro de la AR no hace falta el botón de pantalla completa */
+model-viewer[ar-status="session-started"] #cine-completo-abrir,
+model-viewer[ar-status="object-placed"] #cine-completo-abrir { display: none; }
+
+/* ---------- Reproductor propio a pantalla completa ---------- */
+.cine-completo {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 12px 0;
+  background: radial-gradient(ellipse at 50% 30%, rgba(255, 255, 255, .18), transparent 60%), var(--degradado);
+}
+.cine-completo[hidden] { display: none; }
+.cine-completo-barra { display: flex; align-items: flex-start; gap: 10px; }
+.cine-completo-aviso { flex: 1; margin: 0; font-size: 13px; line-height: 1.4; color: #fff; }
+.cine-completo-video { flex: 1; min-height: 0; display: grid; place-items: center; }
+.cine-completo-video video { width: 100%; max-height: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000; box-shadow: 0 14px 40px rgba(4, 60, 120, .45); }
+.cine-completo .cine { position: static; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+.cine-completo #cine-completo-abrir { display: none; }
+body.cine-abierto { overflow: hidden; }
+
+/* El video «espera» aquí: dentro de la página pero invisible (así no se pausa al moverlo) */
+.video-estacionamiento { position: fixed; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none; }
+.video-estacionamiento video { width: 1px; height: 1px; }
+
+@media (min-width: 900px) {
+  .cine-completo { padding: 24px 32px 0; }
+  .cine-completo-video video { width: auto; height: 100%; max-width: 100%; }
+}
+
+/* Monitores: la tarjeta y el asistente pasan a un panel lateral */
+@media (min-width: 900px) {
+  .barra-ar { padding: 16px 32px; }
+  .tarjeta-info, .asistente { left: auto; right: 24px; bottom: 24px; width: 380px; margin: 0; }
+  .boton-asistente { left: auto; right: 24px; transform: none; bottom: 24px; }
+}

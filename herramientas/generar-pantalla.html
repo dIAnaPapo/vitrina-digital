@@ -1,0 +1,42 @@
+<!doctype html>
+<!--
+  HERRAMIENTA (no es parte del recorrido del visitante).
+  Genera modelos/pantalla-cine.glb, el televisor retro de la AR de Multimedia.
+  Ábrela con Live Server, toca «Descargar» y guarda el archivo en modelos/.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="../img/icono.svg" type="image/svg+xml">
+  <title>Generar pantalla de cine · Vitrina Digital</title>
+  <link rel="stylesheet" href="../css/estilos.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
+  <style>
+    body { padding: 24px 16px; max-width: 720px; margin: 0 auto; }
+    model-viewer { width: 100%; height: 360px; background: var(--hielo); border-radius: 22px; }
+    pre { display: none; }
+  </style>
+</head>
+<body>
+  <h1 class="display" style="font-size:32px">Pantalla de cine (.glb)</h1>
+  <p id="info">Generando…</p>
+  <model-viewer id="vista" camera-controls shadow-intensity="1" alt="Vista previa del televisor retro generado"></model-viewer>
+  <p><a class="boton-ar-grande" id="descargar" download="pantalla-cine.glb" style="padding-right:26px">Descargar pantalla-cine.glb</a></p>
+  <pre id="base64"></pre>
+
+  <script type="module">
+    import { crearPantallaGLB } from './pantalla-glb.js';
+    const glb = crearPantallaGLB();
+    const url = URL.createObjectURL(new Blob([glb], { type: 'model/gltf-binary' }));
+    document.getElementById('vista').src = url;
+    document.getElementById('descargar').href = url;
+    document.getElementById('info').textContent = `Listo: ${(glb.length / 1024).toFixed(1)} KB.`;
+    // Para automatizar: el archivo en base64 (oculto)
+    let bin = '';
+    glb.forEach(b => bin += String.fromCharCode(b));
+    document.getElementById('base64').textContent = btoa(bin);
+  </script>
+</body>
+</html>

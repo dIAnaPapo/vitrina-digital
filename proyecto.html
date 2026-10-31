@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  PANTALLA 2 · Información del proyecto (ficha 2D).
+  URL: proyecto.html?id=mi-casa-mi-futuro
+  Si el proyecto tiene "ar" en el JSON → aparece el botón grande «VER EN AR» → ar.html
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="img/icono.svg" type="image/svg+xml">
+  <title>Proyecto · Vitrina Digital Ecotec</title>
+  <meta name="theme-color" content="#0662AE">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+<div class="marco">
+  <header class="hero ficha-hero">
+    <img class="hero-fondo" id="fondo" src="" alt="">
+    <nav class="nav" aria-label="Principal">
+      <a class="logo" href="index.html">
+        <span class="logo-marca" id="logo-icono"></span>
+        <span class="logo-texto">VITRINA DIGITAL<img class="logo-ecotec" src="img/logo-ecotec-blanco.svg" alt="Universidad Ecotec"></span>
+      </a>
+      <div class="nav-enlaces"><a href="index.html#carreras">Carreras</a><a href="index.html#como">Cómo funciona</a><a href="placa.html">La placa</a></div>
+    </nav>
+
+    <div class="hero-cuerpo" style="display:block">
+      <a class="volver" id="volver" href="index.html#carreras">← Todas las carreras</a>
+      <p class="ubicacion" id="ubicacion"></p>
+      <h1 class="display" id="titulo">…</h1>
+      <div class="acciones" id="acciones" style="margin-top:28px"></div>
+    </div>
+  </header>
+
+  <main class="seccion" id="ficha" aria-live="polite">
+    <p>Cargando proyecto…</p>
+  </main>
+
+  <footer class="pie">
+    <span>Universidad Ecotec · Experiencias Inmersivas</span>
+    <a href="index.html#carreras">Ver todas las carreras</a>
+  </footer>
+</div>
+
+<script type="module">
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos } from './js/datos.js';
+  document.getElementById('logo-icono').innerHTML = iconos.ar;
+
+  try {
+    const datos = await cargarDatos();
+    const p = datos.proyectos.find(x => x.id === leerParametro('id'));
+    if (!p) throw new Error('Proyecto no encontrado');
+    const carrera = datos.carreras.find(c => c.id === p.carrera);
+
+    document.title = `${p.titulo} · Vitrina Digital Ecotec`;
+    document.getElementById('titulo').textContent = p.titulo;
+    document.getElementById('ubicacion').textContent = `${carrera?.nombre ?? ''} · ${p.ubicacion}`;
+    // «Volver» lleva a los proyectos de la misma carrera
+    const volver = document.getElementById('volver');
+    volver.href = `carrera.html?c=${encodeURIComponent(p.carrera)}`;
+    if (carrera) volver.textContent = `← ${carrera.nombre}`;
+    document.getElementById('fondo').src = p.imagenes[0]?.src ?? '';
+
+    // ---- Botones: Ver en AR (si tiene) + Escuchar ficha ----
+    document.getElementById('acciones').innerHTML = `
+      ${p.ar ? `<a class="boton-ar-grande" href="ar.html?id=${encodeURIComponent(p.id)}">
+                  Ver en AR <span class="circulo">${iconos.ar}</span></a>` : ''}
+      <button class="boton-linea" id="escuchar" type="button">${iconos.audio.replace('<svg', '<svg width="18" height="18"')} <span>Escuchar ficha</span></button>`;
+
+    // ---- Ficha ----
+    const imagenes = p.imagenes.map(img => `<img src="${escapar(img.src)}" alt="${escapar(img.alt)}" loading="lazy">`).join('');
+    // Video con subtítulos (la letra). El navegador muestra el botón «CC» para activarlos o desactivarlos.
+    const pista = p.subtitulos ? `<track kind="subtitles" src="${escapar(p.subtitulos)}" srclang="es" label="Letra (español)" default>` : '';
+    const video = p.video ? `<video src="${escapar(p.video)}" poster="${escapar(p.poster ?? '')}" controls playsinline preload="metadata" aria-label="Video del proyecto ${escapar(p.titulo)}">${pista}</video>` : '';
+
+    // Créditos y letra completa (si el proyecto los tiene)
+    const creditos = p.creditos ? `
+      <dl class="meta creditos">
+        <div><dt>Letra</dt><dd>${escapar(p.creditos.letra)}</dd></div>
+        <div><dt>Música</dt><dd>${escapar(p.creditos.musica)}</dd></div>
+        <div style="grid-column:1/-1"><dt>Origen</dt><dd>${escapar(p.creditos.origen)}</dd></div>
+      </dl>` : '';
+    // Crédito del modelo 3D de referencia (licencia CC BY: autor, enlace, licencia y cambios)
+    const cm = p.creditoModelo;
+    const creditoModelo = cm ? `
+      <p class="credito-modelo">
+        Modelo 3D de referencia: <a href="${escapar(cm.url)}" target="_blank" rel="noopener">${escapar(cm.titulo)}</a>
+        por ${escapar(cm.autor)} (${escapar(cm.plataforma)}) · Licencia
+        <a href="${escapar(cm.licenciaUrl)}" target="_blank" rel="noopener license">${escapar(cm.licencia)}</a>.
+        ${escapar(cm.cambios ?? '')}
+      </p>` : '';
+    const letra = p.letra ? `
+      <details class="letra">
+        <summary>Ver la letra completa</summary>
+        ${p.letra.map(b => `<h3>${escapar(b.seccion)}</h3><p>${b.lineas.map(escapar).join('<br>')}</p>`).join('')}
+      </details>` : '';
+
+    document.getElementById('ficha').innerHTML = `
+      <div class="ficha-grid">
+        <p class="descripcion">${escapar(p.descripcion)}</p>
+        <dl class="meta">
+          <div><dt>Estudiante</dt><dd>${escapar(p.estudiante)}</dd></div>
+          <div><dt>Materia</dt><dd>${escapar(p.materia)}</dd></div>
+          <div><dt>Periodo</dt><dd>${escapar(p.periodo)}</dd></div>
+          ${p.ar && p.ar.tipo !== 'video'
+            ? `<div><dt>Escala</dt><dd>${escapar(p.ar.escala)}</dd></div>`
+            : `<div><dt>Carrera</dt><dd>${escapar(carrera?.nombre)}</dd></div>`}
+        </dl>
+      </div>
+      <div class="galeria">${video}${imagenes}</div>
+      ${creditos}${creditoModelo}${letra}`;
+
+    // ---- Lectura en voz alta (viene en el navegador) ----
+    const boton = document.getElementById('escuchar');
+    const etiqueta = boton.querySelector('span');
+    if (!('speechSynthesis' in window)) boton.hidden = true;
+    boton.addEventListener('click', () => {
+      if (speechSynthesis.speaking) { speechSynthesis.cancel(); etiqueta.textContent = 'Escuchar ficha'; return; }
+      const texto = `${p.titulo}. ${p.descripcion}. Estudiante: ${p.estudiante}. Materia: ${p.materia}.`.replaceAll('[EJEMPLO]', '');
+      const voz = new SpeechSynthesisUtterance(texto);
+      voz.lang = 'es-ES';
+      voz.onend = () => { etiqueta.textContent = 'Escuchar ficha'; };
+      speechSynthesis.speak(voz);
+      etiqueta.textContent = 'Detener';
+    });
+  } catch (e) {
+    mostrarError('No encontramos ese proyecto.');
+    console.error(e);
+  }
+</script>
+</body>
+</html>

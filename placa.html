@@ -1,0 +1,107 @@
+<!doctype html>
+<!--
+  PLACA IMPRIMIBLE (para el aula).
+  Genera el diseño de la placa con el QR de respaldo apuntando a la URL del sitio.
+  1. Abre esta página en la URL publicada (GitHub Pages) → el QR toma esa dirección sola.
+  2. O pega la URL en el campo de abajo.
+  3. Imprime (Ctrl+P) y pega la etiqueta NFC detrás de la zona marcada.
+-->
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="img/icono.svg" type="image/svg+xml">
+  <title>Placa NFC · Vitrina Digital Ecotec</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    body { padding: 24px 16px; color: var(--tinta); }
+    .controles { max-width: 520px; margin: 0 auto 24px; display: grid; gap: 10px; }
+    .controles label { font-size: 13px; opacity: .8; }
+    .controles input { min-height: 48px; border-radius: 999px; border: 1.5px solid rgba(6, 98, 174, .3); background: #fff; color: var(--tinta); padding: 0 18px; font: 15px var(--texto); }
+    .controles .acciones { justify-content: space-between; }
+
+    /* La placa: 10 x 15 cm al imprimir */
+    .placa {
+      width: min(100%, 400px); aspect-ratio: 2 / 3; margin: 0 auto; position: relative; overflow: hidden;
+      border-radius: 28px; padding: 28px; display: flex; flex-direction: column; justify-content: space-between;
+      background:
+        radial-gradient(ellipse at 85% 10%, rgba(255, 255, 255, .2), transparent 50%),
+        var(--degradado);
+      border: 1px solid var(--linea); color: #fff;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .placa h1 { font-size: 46px; }
+    .placa .descripcion-placa { font-size: 13px; line-height: 1.45; opacity: .85; margin: 12px 0 0; max-width: 260px; }
+    .zona { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: end; }
+    .nfc {
+      aspect-ratio: 1; border-radius: 22px; border: 2px dashed rgba(255, 255, 255, .5);
+      display: grid; place-items: center; text-align: center; padding: 10px;
+    }
+    .nfc svg { width: 52px; height: 52px; color: var(--blanco); }
+    .nfc p { margin: 4px 0 0; font: 600 13px var(--texto); letter-spacing: .1em; text-transform: uppercase; }
+    .qr { background: #fff; border-radius: 16px; padding: 8px; width: 120px; }
+    .qr svg { width: 100%; height: auto; display: block; }
+    .qr-texto { font-size: 10px; text-align: center; color: var(--tinta); margin: 4px 0 0; letter-spacing: .06em; text-transform: uppercase; }
+
+    @media print {
+      @page { size: 10cm 15cm; margin: 0; }
+      body { background: none; padding: 0; }
+      .controles { display: none; }
+      .placa { width: 10cm; height: 15cm; border-radius: 0; border: 0; aspect-ratio: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="controles">
+    <label for="url">Dirección que abre la placa (la misma que grabas en la etiqueta NFC)</label>
+    <input id="url" type="url" inputmode="url">
+    <div class="acciones">
+      <a class="boton-linea" href="index.html">← Volver</a>
+      <button class="boton-ar-grande" type="button" onclick="window.print()" style="padding-right:26px">Imprimir placa</button>
+    </div>
+  </div>
+
+  <article class="placa" aria-label="Placa de la Vitrina Digital">
+    <div>
+      <div class="logo"><span class="logo-marca"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span><span class="logo-texto">VITRINA DIGITAL<img class="logo-ecotec" src="img/logo-ecotec-blanco.svg" alt="Universidad Ecotec"></span></div>
+    </div>
+
+    <div>
+      <h1 class="display">Escanea<br>aquí</h1>
+      <p class="descripcion-placa">Mira los proyectos de esta aula en tu celular, también en realidad aumentada. Sin instalar ninguna app.</p>
+    </div>
+
+    <div class="zona">
+      <div class="nfc">
+        <div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a9 9 0 0 1 0 12M13 3.5a13 13 0 0 1 0 17"/></svg>
+          <p>Acerca tu<br>celular</p>
+        </div>
+      </div>
+      <div class="qr">
+        <div id="qr" role="img" aria-label="Código QR que abre la Vitrina Digital"></div>
+        <p class="qr-texto">o escanea</p>
+      </div>
+    </div>
+  </article>
+
+  <script>
+    const campo = document.getElementById('url');
+    // Por defecto: la página de inicio en la misma dirección donde está publicada esta placa
+    campo.value = new URL('index.html', location.href).href;
+
+    function dibujarQR() {
+      const qr = qrcode(0, 'M');           // 0 = tamaño automático, M = corrección de errores media
+      qr.addData(campo.value.trim());
+      qr.make();
+      document.getElementById('qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true });
+    }
+    campo.addEventListener('input', dibujarQR);
+    dibujarQR();
+  </script>
+</body>
+</html>
