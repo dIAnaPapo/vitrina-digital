@@ -149,6 +149,35 @@ test('AR propia (modo de prueba): tutorial, colocar, gestos, botones, interior, 
   await contexto.close();
 });
 
+test('AR propia sin mesa: a los 6 s aparece «Colocar aquí» y coloca la maqueta frente a la cámara', async () => {
+  const { pagina, contexto, errores } = await abrir(`ar.html?id=${ID}&arprueba=1&sinmesa=1`, {
+    viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2
+  });
+  await pagina.waitForFunction(() => window.vitrina?.arPropia, null, { timeout: 30000 });
+  await pagina.locator('#ver-en-mi-espacio').click();
+  await pagina.locator('#capa-ar').waitFor({ state: 'visible' });
+  // El consejo de la textura y la luz está en el primer paso del tutorial
+  assert.match(await pagina.locator('.ar-tutorial-paso:not([hidden]) p').textContent(), /textura y buena luz/);
+  await pagina.click('[data-ar="ocultar-tutorial"]');
+  assert.equal(await pagina.locator('#ar-colocar-aqui').isHidden(), true);
+  // Un toque sin mesa no coloca nada
+  await pagina.mouse.click(195, 420);
+  assert.equal(await pagina.evaluate(() => window.vitrina.arPropia.estado().colocada), false);
+  await pagina.locator('#ar-colocar-aqui').waitFor({ state: 'visible', timeout: 9000 });
+  assert.match(await pagina.locator('#ar-estado').textContent(), /textura y buena luz/);
+  await pagina.click('#ar-colocar-aqui');
+  const estado = await pagina.evaluate(() => window.vitrina.arPropia.estado());
+  assert.equal(estado.colocada, true);
+  assert.equal(estado.visible, true);
+  assert.equal(await pagina.locator('#ar-colocar-aqui').isHidden(), true);
+  assert.match(await pagina.locator('#ar-estado').textContent(), /frente a ti/);
+  await pagina.waitForTimeout(400);
+  await pagina.screenshot({ path: captura('maqueta-ar-5-colocar-aqui.png') });
+  await pagina.click('[data-ar="salir"]');
+  assert.deepEqual(errores, []);
+  await contexto.close();
+});
+
 test('ficha: «Proyecto de ejemplo», créditos CC BY y visor de planos con zoom', async () => {
   const contexto = await navegador.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 });
   const pagina = await contexto.newPage();

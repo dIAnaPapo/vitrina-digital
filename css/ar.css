@@ -327,6 +327,7 @@ body.cine-abierto { overflow: hidden; }
   background: rgba(255, 255, 255, .96); color: var(--tinta); box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
 }
 .ar-tutorial-paso p { margin: 10px 0 0; font: 600 16px/1.4 var(--texto); }
+.ar-tutorial-consejo { display: block; margin-top: 6px; font: 500 13px/1.35 var(--texto); color: #4F5D73; }
 .ar-icono { font-size: 44px; line-height: 1; }
 .ar-icono-barrido { animation: barrido 2s ease-in-out infinite; }
 .ar-icono-toque { animation: toque 1.2s ease-in-out infinite; }
@@ -350,6 +351,10 @@ body.cine-abierto { overflow: hidden; }
 .ar-abajo {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
   display: grid; justify-items: center; gap: 8px; padding: 0 10px calc(12px + env(safe-area-inset-bottom));
+}
+.ar-colocar-aqui {
+  min-height: 52px; padding: 0 24px; border: 0; border-radius: 999px; cursor: pointer;
+  background: #fff; color: var(--azul); font: 700 16px var(--texto); box-shadow: 0 6px 18px rgba(0, 0, 0, .3);
 }
 .ar-barra {
   display: flex; gap: 4px; width: 100%; max-width: 520px; padding: 6px; border-radius: 22px;

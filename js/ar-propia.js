@@ -16,7 +16,8 @@
 //   - Caras de un solo lado y SIN plano de corte mientras no se usa «Ver interior»;
 //     los materiales del corte se preparan una sola vez al cargar.
 //   - Sombra pre-dibujada (una imagen), sin sombras en tiempo real.
-//   - El hit-test (buscar la mesa) se apaga en cuanto se coloca la maqueta.
+//   - El hit-test (buscar la mesa) empieza con la cámara y acepta planos y puntos sueltos;
+//     se apaga en cuanto se coloca la maqueta. A los 6 s sin mesa aparece «Colocar aquí».
 //   - Los puntos 1-2-3 se mueven con transform cada 2 cuadros, sin leer el layout.
 //   - Ningún objeto nuevo por cuadro (vectores y matrices reutilizados).
 //   - Shaders y texturas se preparan ANTES de abrir la cámara.
@@ -73,6 +74,10 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   let diag = null;                   // modo diagnóstico (?debug=1)
   let sesion = null, referencia = null, fuenteHit = null;
   let hayHit = false, colocada = false;
+  // Si no aparece la mesa en unos segundos, se ofrece «Colocar aquí» (frente a la cámara, sobre un plano estimado)
+  const ESPERA_MESA = 6000;
+  let buscandoDesde = 0, colocadaManual = false;
+  const sinMesaPrueba = modoPrueba && new URLSearchParams(location.search).get('sinmesa') === '1';
   const puntoHit = new THREE.Vector3();
   const inicial = { posicion: new THREE.Vector3(), giro: 0 };
   let giroObjetivo = 0, escalaObjetivo = 1, posicionObjetivo = null;
@@ -89,7 +94,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
 
   const el = {
     gestos: $('#ar-gestos', capa), puntos: $('#ar-puntos', capa), estado: $('#ar-estado', capa),
-    tutorial: $('#ar-tutorial', capa), interior: $('#ar-interior', capa), compartidos: $('#ar-compartidos', capa)
+    tutorial: $('#ar-tutorial', capa), interior: $('#ar-interior', capa), compartidos: $('#ar-compartidos', capa),
+    colocarAqui: $('#ar-colocar-aqui', capa)
   };
   el.interior.hidden = cortes.length === 0;   // «Ver interior» solo si el modelo tiene cortes
 
@@ -231,7 +237,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
         document.body.append(renderer.domElement);
         renderer.domElement.className = 'ar-prueba-lienzo';
         renderer.xr.enabled = false;
-        hayHit = true;
+        hayHit = !sinMesaPrueba;                 // &sinmesa=1 simula que no se encuentra la mesa
         puntoHit.set(0, 0, 0);
         camaraPrueba.position.set(0, 0.6, 1.15);
         camaraPrueba.lookAt(0, 0.08, 0);
@@ -247,7 +253,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
         await renderer.xr.setSession(sesion);
         referencia = renderer.xr.getReferenceSpace();
         const espacioVista = await sesion.requestReferenceSpace('viewer');
-        fuenteHit = await sesion.requestHitTestSource({ space: espacioVista });
+        fuenteHit = await pedirHitTest(espacioVista);
       }
     } catch (e) {
       console.warn('AR propia no disponible, se usará la de model-viewer:', e);
@@ -261,12 +267,24 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     return true;
   }
 
+  /**
+   * Hit-test = «¿qué superficie hay en el centro de la pantalla?». Empieza apenas se abre la cámara,
+   * aunque el tutorial esté visible. Además de planos completos acepta PUNTOS sueltos de ARCore:
+   * aparecen mucho antes que un plano, sobre todo en mesas lisas o con poca luz.
+   */
+  async function pedirHitTest(espacio) {
+    try { return await sesion.requestHitTestSource({ space: espacio, entityTypes: ['plane', 'point'] }); }
+    catch { return sesion.requestHitTestSource({ space: espacio }); }
+  }
+
   function entrar() {
     // Los elementos compartidos (tarjeta, asistente) pasan a la capa de la AR
     compartidos.forEach(n => { lugaresOriginales.set(n, [n.parentNode, n.nextSibling]); el.compartidos.append(n); });
     capa.hidden = false;
     document.body.classList.add('ar-propia-activa');     // oculta el visor de la página: deja de dibujar
-    colocada = false; pivote.visible = false; nivelInterior = 0;
+    colocada = false; colocadaManual = false; pivote.visible = false; nivelInterior = 0;
+    el.colocarAqui.hidden = true;
+    buscandoDesde = performance.now();
     usarCorte(false);
     el.puntos.hidden = true;
     escalaObjetivo = 1; pivote.scale.setScalar(1);
@@ -320,20 +338,31 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     const dt = Math.min((ahora - relojAnterior) / 1000, 0.1);
     relojAnterior = ahora;
 
-    // Antes de colocar: el hit-test busca la mesa y la retícula la sigue
-    if (!colocada) {
-      if (frame && fuenteHit) {
-        const resultados = frame.getHitTestResults(fuenteHit);
-        hayHit = resultados.length > 0;
-        if (hayHit) puntoHit.setFromMatrixPosition(matrizHit.fromArray(resultados[0].getPose(referencia).transform.matrix));
+    if (frame) diag?.hito('camara');
+    // El hit-test busca la mesa hasta colocar (o, si se usó «Colocar aquí», hasta encontrarla)
+    if ((!colocada || colocadaManual) && frame && fuenteHit) {
+      const resultados = frame.getHitTestResults(fuenteHit);
+      hayHit = resultados.length > 0;
+      if (hayHit) puntoHit.setFromMatrixPosition(matrizHit.fromArray(resultados[0].getPose(referencia).transform.matrix));
+      if (hayHit && colocadaManual && el.estado.dataset.fase !== 'mesa-hallada') {
+        mostrarEstado('Se encontró la mesa: toca ⊙ Centrar para apoyar la maqueta en ella.', 0, 'mesa-hallada');
       }
+    }
+    // Antes de colocar: la retícula sigue a la superficie detectada
+    if (!colocada) {
       if (hayHit) diag?.hito('superficie');
       reticula.visible = hayHit;
+      const buscando = (el.estado.dataset.fase ?? '').startsWith('buscando');
       if (hayHit) {
-        reticula.position.copy(puntoHit);
-        if (el.estado.dataset.fase === 'buscando') mostrarEstado('Toca para colocar la maqueta.', 0, 'colocar');
-      } else if (el.estado.dataset.fase !== 'buscando') {
+        if (buscando) mostrarEstado('Toca para colocar la maqueta.', 0, 'colocar');
+      } else if (!buscando) {
         mostrarEstado('Buscando superficie… Mueve el celular despacio apuntando a la mesa.');
+      }
+      // A los 6 s sin mesa: consejo + botón «Colocar aquí» (el DOM solo se toca cuando cambia)
+      const ofrecer = !hayHit && ahora - buscandoDesde > ESPERA_MESA;
+      if (ofrecer === el.colocarAqui.hidden) {
+        el.colocarAqui.hidden = !ofrecer;
+        if (ofrecer) mostrarEstado('No encuentro la mesa todavía. Apunta a una superficie con textura y buena luz, o toca «Colocar aquí».', 0, 'buscando-lento');
       }
     }
 
@@ -393,7 +422,20 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   // ---------------------------------------------------------
   // Colocar y restablecer
   // ---------------------------------------------------------
-  function colocar() {
+  /** «Colocar aquí»: sin mesa detectada, la maqueta va ~60 cm frente a la cámara, sobre un plano estimado. */
+  function colocarFrente() {
+    const camara = camaraActual();
+    origen.setFromMatrixPosition(camara.matrixWorld);
+    haciaPunto.setFromMatrixColumn(camara.matrixWorld, 2).negate();   // hacia dónde mira la cámara
+    haciaPunto.y = 0;
+    if (haciaPunto.lengthSq() < 1e-6) haciaPunto.set(0, 0, -1);
+    haciaPunto.normalize();
+    puntoHit.copy(origen).addScaledVector(haciaPunto, 0.6);
+    puntoHit.y = origen.y - 0.45;          // plano estimado: una mesa unos 45 cm por debajo del celular
+    colocar(true);
+  }
+
+  function colocar(manual = false) {
     const camara = camaraActual();
     origen.setFromMatrixPosition(camara.matrixWorld);
     pivote.position.copy(puntoHit);
@@ -405,14 +447,21 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     pivote.visible = true;
     reticula.visible = false;
     colocada = true;
-    apagarHitTest();                                   // ya no hace falta buscar la mesa en cada cuadro
+    colocadaManual = manual;
+    el.colocarAqui.hidden = true;
+    // Ya no hace falta buscar la mesa en cada cuadro (con «Colocar aquí» se sigue buscando para poder apoyarla)
+    if (!manual) apagarHitTest();
+    hayHit = false;
     el.puntos.hidden = false;
     botonesPunto.forEach(p => { p.x = p.y = -1; });
     inicial.posicion.copy(pivote.position);
     inicial.giro = giroObjetivo;
     diag?.hito('colocada');
-    mostrarEstado('Maqueta colocada. Gira con un dedo, pellizca para el tamaño y acércate para ver los detalles.', 4000);
-    registrar('ar_colocada', { proyecto: proyecto.id, modo: 'maqueta' });
+    if (manual) diag?.hito('manual');
+    mostrarEstado(manual
+      ? 'Maqueta colocada frente a ti. Muévela con dos dedos; si aparece la mesa, toca ⊙ Centrar para apoyarla.'
+      : 'Maqueta colocada. Gira con un dedo, pellizca para el tamaño y acércate para ver los detalles.', 5000);
+    registrar('ar_colocada', { proyecto: proyecto.id, modo: manual ? 'colocar-aqui' : 'maqueta' });
     if (el.tutorial.dataset.paso !== undefined && !el.tutorial.hidden && Number(el.tutorial.dataset.paso) < 2) mostrarTutorial(2);
   }
 
@@ -504,7 +553,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     if (accion === 'salir') salir();
     if (accion === 'ayuda') mostrarTutorial(0);
     if (accion === 'ocultar-tutorial') cerrarTutorial(true);
-    if (!colocada && ['izquierda', 'derecha', 'menos', 'mas', 'centrar', 'interior'].includes(accion)) {
+    if (accion === 'colocar-aqui') { if (!colocada) colocarFrente(); return; }
+    if (!colocada &&['izquierda', 'derecha', 'menos', 'mas', 'centrar', 'interior'].includes(accion)) {
       mostrarEstado('Primero coloca la maqueta: toca la pantalla cuando veas el anillo.', 2500);
       return;
     }
@@ -512,7 +562,14 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     if (accion === 'derecha') giroObjetivo -= Math.PI / 4;
     if (accion === 'mas') escalaObjetivo = Math.min(4, escalaObjetivo * 1.25);
     if (accion === 'menos') escalaObjetivo = Math.max(0.25, escalaObjetivo / 1.25);
-    if (accion === 'centrar') {
+    if (accion === 'centrar' && colocadaManual && hayHit) {
+      // Se colocó con «Colocar aquí» y ahora sí se encontró la mesa: se apoya en ella
+      posicionObjetivo = puntoHit.clone();
+      inicial.posicion.copy(puntoHit);
+      colocadaManual = false;
+      apagarHitTest();
+      mostrarEstado('Maqueta apoyada en la mesa.', 2200);
+    } else if (accion === 'centrar') {
       // El centro de la pantalla sobre el plano de la mesa (sin volver a encender el hit-test)
       const centro = puntoEnLaMesa(anchoCapa / 2, altoCapa / 2);
       if (centro && centro.distanceTo(pivote.position) < 5) posicionObjetivo = centro;

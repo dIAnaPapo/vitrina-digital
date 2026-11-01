@@ -4,7 +4,8 @@
 // Muestra en pantalla, encima de la cámara:
 //   FPS · tiempo por cuadro (y el peor) · tiempo de JavaScript por cuadro
 //   llamadas de dibujo · triángulos · memoria · resolución de la AR
-//   segundos hasta detectar la mesa y hasta colocar la maqueta
+//   segundos (desde el toque en «Ver en mi espacio») hasta ver la cámara,
+//   detectar la mesa y colocar la maqueta
 // El texto se actualiza 2 veces por segundo (no en cada cuadro) para no
 // cambiar lo que se está midiendo.
 // =========================================================
@@ -21,6 +22,8 @@ export function crearDiagnostico(capa, renderer, perfil = '') {
   const panel = document.createElement('pre');
   panel.className = 'ar-diagnostico';
   panel.setAttribute('aria-hidden', 'true');
+  panel.textContent = `${perfil}
+Midiendo…`;
   capa.append(panel);
 
   let inicio = performance.now(), ventana = inicio, ultimo = 0;
@@ -38,7 +41,7 @@ export function crearDiagnostico(capa, renderer, perfil = '') {
   return {
     /** Se llama al tocar «Ver en mi espacio»: desde aquí se cuentan los segundos */
     empezar(desde = performance.now()) { inicio = desde; ventana = performance.now(); ultimo = 0; cuadros = js = peor = 0; hitos = {}; },
-    /** Marca la primera vez que pasa algo ('superficie', 'colocada') */
+    /** Marca la primera vez que pasa algo ('camara', 'superficie', 'colocada', 'manual') */
     hito(nombre) { hitos[nombre] ??= (performance.now() - inicio) / 1000; },
     /** Se llama al final de cada cuadro con los ms de JavaScript que tomó */
     cuadro(msJS) {
@@ -57,7 +60,8 @@ export function crearDiagnostico(capa, renderer, perfil = '') {
         `Llamadas ${render.calls} · Triángulos ${render.triangles}`,
         `Memoria ${heap}${memory.geometries} geom · ${memory.textures} tex`,
         `Resolución ${resolucion()}`,
-        `Mesa ${seg(hitos.superficie)} · Colocada ${seg(hitos.colocada)}`
+        `Cámara ${seg(hitos.camara)} · Mesa ${seg(hitos.superficie)}`,
+        `Colocada ${seg(hitos.colocada)}${hitos.manual != null ? ' (Colocar aquí)' : ''}`
       ].join('\n');
       ventana = ahora;
       cuadros = js = peor = 0;

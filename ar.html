@@ -197,7 +197,7 @@
       <div class="ar-tutorial-tarjeta" role="group" aria-label="Tutorial">
         <div class="ar-tutorial-paso">
           <div class="ar-icono ar-icono-barrido" aria-hidden="true">📱</div>
-          <p>Mueve el celular despacio apuntando a la mesa</p>
+          <p>Mueve el celular despacio apuntando a la mesa<span class="ar-tutorial-consejo">Apunta a una superficie con textura y buena luz</span></p>
         </div>
         <div class="ar-tutorial-paso" hidden>
           <div class="ar-icono ar-icono-toque" aria-hidden="true">👆</div>
@@ -215,6 +215,8 @@
     <div class="ar-compartidos" id="ar-compartidos"></div>
 
     <div class="ar-abajo">
+      <!-- Aparece si a los 6 s no se encontró la mesa -->
+      <button type="button" class="ar-colocar-aqui" id="ar-colocar-aqui" data-ar="colocar-aqui" hidden><span aria-hidden="true">📍</span> Colocar aquí</button>
       <div class="ar-barra">
         <button type="button" class="ar-boton" data-ar="izquierda" aria-label="Girar a la izquierda 45 grados"><span aria-hidden="true">⟲</span><span class="ar-boton-texto">Girar</span></button>
         <button type="button" class="ar-boton" data-ar="derecha" aria-label="Girar a la derecha 45 grados"><span aria-hidden="true">⟳</span><span class="ar-boton-texto">Girar</span></button>
