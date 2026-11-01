@@ -21,6 +21,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { diagnosticoActivo, crearDiagnostico } from './diagnostico.js';
 
 /** ¿Este navegador puede abrir AR con WebXR? (Chrome en Android con ARCore) */
 export async function soportaARPropia() {
@@ -47,6 +48,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   let renderer, escena, camaraPrueba, pivote, modelo, sombra, reticula, raycaster;
   let plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
   let precarga = null;
+  let diag = null;                                   // modo diagnóstico (?debug=1)
   let sesion = null, referencia = null, fuenteHit = null;
   let hayHit = false, colocada = false, tamano = 'maqueta';
   const puntoHit = new THREE.Vector3();
@@ -118,6 +120,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       // Compilar los materiales ahora (y no al abrir la cámara) para que el primer cuadro sea rápido
       camaraPrueba = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 100);
       renderer.compile(escena, camaraPrueba);
+      if (diagnosticoActivo()) diag = crearDiagnostico(capa, renderer, 'Versión del Bloque C');
       return true;
     })();
     return precarga;
@@ -166,8 +169,10 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   // Iniciar / salir
   // ---------------------------------------------------------
   async function iniciar() {
+    const tocado = performance.now();
     try {
       await precargar();
+      diag?.empezar(tocado);
       if (modoPrueba) {
         document.body.append(renderer.domElement);
         renderer.domElement.className = 'ar-prueba-lienzo';
@@ -248,6 +253,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
 
   function cuadro(tiempo, frame) {
     const ahora = performance.now();
+    if (diag && hayHit) diag.hito('superficie');
     const dt = Math.min((ahora - relojAnterior) / 1000, 0.1);
     relojAnterior = ahora;
 
@@ -285,6 +291,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     el.puntos.hidden = !colocada;          // los puntos aparecen recién con la maqueta colocada
     if (colocada) moverBotonesPunto();
     cuadroN++;
+    diag?.cuadro(performance.now() - ahora);
   }
 
   const v = new THREE.Vector3(), haciaPunto = new THREE.Vector3();
@@ -329,6 +336,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     pivote.scale.setScalar(escalaObjetivo);
     pivote.visible = true;
     colocada = true;
+    diag?.hito('colocada');
     inicial.posicion.copy(pivote.position);
     inicial.giro = giroObjetivo;
     mostrarEstado(tamano === 'real' ? 'Casa colocada a escala real. Camina para recorrerla.' : 'Maqueta colocada. Gira con un dedo, pellizca para el tamaño y acércate para ver los detalles.', 4000);
