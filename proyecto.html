@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   PANTALLA 2 · Información del proyecto (ficha 2D).
-  URL: proyecto.html?id=mi-casa-mi-futuro
+  URL: proyecto.html?id=casa-moderna
   Si el proyecto tiene "ar" en el JSON → aparece el botón grande «VER EN AR» → ar.html
 -->
 <html lang="es">
@@ -31,6 +31,7 @@
     <div class="hero-cuerpo" style="display:block">
       <a class="boton-volver" id="volver" href="index.html#carreras"><span class="boton-volver-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span><span class="boton-volver-texto">Todas las carreras</span></a>
       <p class="ubicacion" id="ubicacion"></p>
+      <p class="sello-ejemplo" id="sello-ejemplo" hidden>Proyecto de ejemplo</p>
       <h1 class="display" id="titulo">…</h1>
       <div class="acciones" id="acciones" style="margin-top:28px"></div>
     </div>
@@ -48,6 +49,7 @@
 
 <script type="module">
   import { cargarDatos, leerParametro, escapar, mostrarError, iconos, portadaDe } from './js/datos.js';
+  import { crearVisorPlanos } from './js/visor-planos.js';
   document.getElementById('logo-icono').innerHTML = iconos.ar;
 
   try {
@@ -58,7 +60,9 @@
 
     document.title = `${p.titulo} · Vitrina Digital Ecotec`;
     document.getElementById('titulo').textContent = p.titulo;
-    document.getElementById('ubicacion').textContent = `${carrera?.nombre ?? ''} · ${p.ubicacion}`;
+    document.getElementById('ubicacion').textContent = [carrera?.nombre, p.ubicacion].filter(Boolean).join(' · ');
+    // Etiqueta «PROYECTO DE EJEMPLO» (campo "ejemplo" del JSON; el admin la podrá quitar)
+    document.getElementById('sello-ejemplo').hidden = !p.ejemplo;
     // «Volver» lleva a los proyectos de la misma carrera (con el nombre corto, para que entre en una línea)
     const volver = document.getElementById('volver');
     volver.href = `carrera.html?c=${encodeURIComponent(p.carrera)}`;
@@ -83,15 +87,28 @@
         <div><dt>Música</dt><dd>${escapar(p.creditos.musica)}</dd></div>
         <div style="grid-column:1/-1"><dt>Origen</dt><dd>${escapar(p.creditos.origen)}</dd></div>
       </dl>` : '';
-    // Crédito del modelo 3D de referencia (licencia CC BY: autor, enlace, licencia y cambios)
+    // Crédito del modelo 3D (licencia CC BY: autor, enlace, licencia, quién lo adaptó y qué cambió)
     const cm = p.creditoModelo;
     const creditoModelo = cm ? `
-      <p class="credito-modelo">
-        Modelo 3D de referencia: <a href="${escapar(cm.url)}" target="_blank" rel="noopener">${escapar(cm.titulo)}</a>
-        por ${escapar(cm.autor)} (${escapar(cm.plataforma)}) · Licencia
-        <a href="${escapar(cm.licenciaUrl)}" target="_blank" rel="noopener license">${escapar(cm.licencia)}</a>.
-        ${escapar(cm.cambios ?? '')}
-      </p>` : '';
+      <div class="credito-modelo">
+        <p>Modelo 3D original: <a href="${escapar(cm.url)}" target="_blank" rel="noopener">${escapar(cm.titulo)}</a>
+          por ${escapar(cm.autor)} (${escapar(cm.plataforma)}), licencia
+          <a href="${escapar(cm.licenciaUrl)}" target="_blank" rel="noopener license">${escapar(cm.licencia)}</a>.</p>
+        ${cm.adaptacion ? `<p>Adaptación del modelo: ${escapar(cm.adaptacion)}.</p>` : ''}
+        ${cm.cambios ? `<p>${escapar(cm.cambios)}</p>` : ''}
+      </div>` : '';
+    // Planos: miniaturas que abren el visor grande con zoom
+    const planos = p.planos?.length ? `
+      <section class="planos" aria-labelledby="titulo-planos">
+        <h2 class="etiqueta-lateral" id="titulo-planos">Planos</h2>
+        <ul class="planos-lista">
+          ${p.planos.map((pl, i) => `
+            <li><button type="button" class="plano" data-plano="${i}" aria-label="Ver en grande: ${escapar(pl.titulo)}">
+              <img src="${escapar(pl.mini)}" alt="${escapar(pl.alt)}" loading="lazy" width="640" height="452">
+              <span>${escapar(pl.titulo)}</span>
+            </button></li>`).join('')}
+        </ul>
+      </section>` : '';
     const letra = p.letra ? `
       <details class="letra">
         <summary>Ver la letra completa</summary>
@@ -110,8 +127,16 @@
             : `<div><dt>Carrera</dt><dd>${escapar(carrera?.nombre)}</dd></div>`}
         </dl>
       </div>
-      <div class="galeria">${video}${imagenes}</div>
-      ${creditos}${creditoModelo}${letra}`;
+      ${video || imagenes ? `<div class="galeria">${video}${imagenes}</div>` : ''}
+      ${planos}${creditos}${creditoModelo}${letra}`;
+
+    if (p.planos?.length) {
+      const visor = crearVisorPlanos(p.planos);
+      document.querySelector('.planos-lista').addEventListener('click', (e) => {
+        const boton = e.target.closest('[data-plano]');
+        if (boton) visor.abrir(Number(boton.dataset.plano), boton);
+      });
+    }
 
   } catch (e) {
     mostrarError('No se encontró el proyecto solicitado.');

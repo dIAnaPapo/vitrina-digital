@@ -11,8 +11,8 @@ import { levantarServidor } from './servidor.mjs';
 
 const PAGINAS = process.argv.slice(2).length ? process.argv.slice(2) : [
   'index.html', 'carrera.html?c=arquitectura', 'carrera.html?c=multimedia',
-  'proyecto.html?id=mi-casa-mi-futuro', 'proyecto.html?id=cuentos-y-espias',
-  'ar.html?id=mi-casa-mi-futuro', 'ar.html?id=cuentos-y-espias', 'placa.html'
+  'proyecto.html?id=casa-moderna', 'proyecto.html?id=cuentos-y-espias',
+  'ar.html?id=casa-moderna', 'ar.html?id=cuentos-y-espias', 'placa.html'
 ];
 const ANCHOS = [
   { nombre: 'celular', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 },

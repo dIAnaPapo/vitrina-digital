@@ -256,9 +256,126 @@ body.cine-abierto { overflow: hidden; }
   .cine-completo-video video { width: auto; height: 100%; max-width: 100%; }
 }
 
+/* =========================================================
+   MAQUETA: adelanto 3D + «Ver en mi espacio» (body.modo-maqueta)
+   ========================================================= */
+/* El botón de model-viewer no se usa: el botón principal es propio */
+.modo-maqueta .boton-ar[slot="ar-button"] { display: none !important; }
+
+.entrar-ar {
+  position: absolute; left: 50%; bottom: 76px; transform: translateX(-50%); z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 8px; width: min(92%, 380px);
+}
+.entrar-ar .boton-ar { position: static; transform: none; min-height: 64px; font-size: 15px; padding-left: 28px; }
+.boton-ar-principal { animation: llamar 2.4s ease-in-out infinite; }
+@keyframes llamar { 0%, 100% { box-shadow: 0 10px 30px rgba(4, 60, 120, .35), 0 0 0 0 rgba(255, 255, 255, .55); } 50% { box-shadow: 0 10px 30px rgba(4, 60, 120, .35), 0 0 0 12px rgba(255, 255, 255, 0); } }
+.entrar-ar-texto {
+  margin: 0; padding: 6px 14px; border-radius: 999px; text-align: center;
+  background: rgba(6, 98, 174, .8); color: #fff; font-size: 13px; line-height: 1.35;
+}
+
+/* Computadora: QR para abrir la maqueta en el celular */
+.ar-qr {
+  position: absolute; right: 24px; bottom: 24px; z-index: 2; width: 190px;
+  padding: 14px; border-radius: 20px; background: #fff; color: var(--tinta); text-align: center;
+  box-shadow: 0 12px 30px rgba(4, 60, 120, .3);
+}
+.ar-qr-codigo svg { width: 100%; height: auto; display: block; }
+.ar-qr p { margin: 8px 0 0; font-size: 13px; font-weight: 600; line-height: 1.3; }
+
+/* =========================================================
+   AR PROPIA (three.js + WebXR): capa HTML sobre la cámara
+   ========================================================= */
+.capa-ar { position: fixed; inset: 0; z-index: 70; color: #fff; font-family: var(--texto); }
+.ar-prueba-lienzo { position: fixed; inset: 0; z-index: 69; background: radial-gradient(ellipse at 50% 40%, #fff, var(--hielo) 70%); }
+.ar-gestos { position: absolute; inset: 0; touch-action: none; }
+.ar-puntos { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.ar-puntos .punto { position: absolute; left: 0; top: 0; pointer-events: auto; }
+
+.ar-arriba {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 3;
+  display: flex; align-items: flex-start; gap: 8px; padding: calc(12px + env(safe-area-inset-top)) 12px 0;
+}
+.ar-pastilla {
+  min-height: 48px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  background: #fff; color: var(--azul); font: 700 14px var(--texto); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+.ar-circulo {
+  width: 48px; height: 48px; flex-shrink: 0; border: 0; border-radius: 50%; cursor: pointer; margin-left: auto;
+  background: #fff; color: var(--azul); font: 700 20px var(--texto); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+.ar-estado {
+  flex: 1; margin: 0; padding: 10px 14px; border-radius: 18px; text-align: center;
+  background: rgba(6, 98, 174, .9); font-size: 13px; line-height: 1.35;
+}
+
+/* Tutorial (no bloquea los toques fuera de la tarjeta) */
+.ar-tutorial { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.ar-tutorial-ocultar {
+  position: absolute; right: 12px; top: calc(72px + env(safe-area-inset-top)); pointer-events: auto;
+  min-height: 44px; padding: 0 16px; border: 1.5px solid #fff; border-radius: 999px; cursor: pointer;
+  background: rgba(6, 98, 174, .85); color: #fff; font: 600 13px var(--texto);
+}
+.ar-tutorial-tarjeta {
+  position: absolute; left: 50%; top: 32%; transform: translateX(-50%); width: min(86%, 340px);
+  pointer-events: auto; cursor: pointer; padding: 22px 20px 16px; border-radius: 24px; text-align: center;
+  background: rgba(255, 255, 255, .96); color: var(--tinta); box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
+}
+.ar-tutorial-paso p { margin: 10px 0 0; font: 600 16px/1.4 var(--texto); }
+.ar-icono { font-size: 44px; line-height: 1; }
+.ar-icono-barrido { animation: barrido 2s ease-in-out infinite; }
+.ar-icono-toque { animation: toque 1.2s ease-in-out infinite; }
+.ar-icono-giro { animation: giro 2.2s ease-in-out infinite; }
+@keyframes toque { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(8px) scale(.9); } }
+@keyframes giro { 0%, 100% { transform: rotate(-18deg); } 50% { transform: rotate(18deg) scale(1.1); } }
+.ar-tutorial-puntos { display: flex; justify-content: center; gap: 6px; margin-top: 14px; }
+.ar-tutorial-puntos span { width: 8px; height: 8px; border-radius: 999px; background: rgba(6, 98, 174, .25); transition: width .3s; }
+.ar-tutorial-puntos span.activo { width: 22px; background: var(--azul); }
+
+/* Tarjeta y asistente dentro de la AR: por encima de las barras de abajo */
+.ar-compartidos { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+.ar-compartidos > * { pointer-events: auto; }
+.capa-ar .tarjeta-info, .capa-ar .asistente { bottom: calc(150px + env(safe-area-inset-bottom)); }
+.capa-ar .boton-asistente { bottom: calc(150px + env(safe-area-inset-bottom)); }
+
+/* Barras de abajo: tamaños + botones grandes */
+.ar-abajo {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
+  display: grid; justify-items: center; gap: 8px; padding: 0 10px calc(12px + env(safe-area-inset-bottom));
+}
+.ar-tamanos { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
+.ar-tamanos button {
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  background: transparent; color: var(--azul); font: 600 13px var(--texto);
+}
+.ar-tamanos button[aria-pressed="true"] { background: var(--azul); color: #fff; }
+.ar-barra {
+  display: flex; gap: 4px; width: 100%; max-width: 520px; padding: 6px; border-radius: 22px;
+  background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+}
+.ar-boton {
+  flex: 1; min-width: 0; min-height: 56px; border: 0; border-radius: 16px; cursor: pointer; padding: 4px 2px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  background: var(--hielo); color: var(--azul); font: 700 22px/1 var(--texto);
+}
+.ar-boton-ancho { flex: 1.6; }
+.ar-boton[aria-pressed="true"] { background: var(--azul); color: #fff; }
+.ar-boton-texto { font: 600 10px/1.1 var(--texto); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+
+/* iPhone: explicación de gestos de Quick Look */
+.ayuda-ios { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(8, 20, 40, .6); }
+.ayuda-ios-tarjeta { width: min(100%, 420px); padding: 22px; border-radius: 24px; background: #fff; color: var(--tinta); }
+.ayuda-ios-tarjeta h2 { margin: 0 0 12px; font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: -.02em; }
+.ayuda-ios-tarjeta ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.ayuda-ios-tarjeta li { display: flex; gap: 10px; align-items: flex-start; font-size: 15px; line-height: 1.35; }
+.ayuda-ios-tarjeta p { font-size: 13px; color: #4F5D73; margin: 14px 0 0; }
+.ayuda-ios-botones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.ayuda-ios .boton-ar-grande { background: var(--azul); color: #fff; }
+
 /* Monitores: la tarjeta y el asistente pasan a un panel lateral */
 @media (min-width: 900px) {
   .barra-ar { padding: 16px 32px; }
   .tarjeta-info, .asistente { left: auto; right: 24px; bottom: 24px; width: 380px; margin: 0; }
+  .modo-maqueta .tarjeta-info { bottom: 290px; }   /* deja ver el QR */
   .boton-asistente { left: auto; right: 24px; transform: none; bottom: 24px; }
 }

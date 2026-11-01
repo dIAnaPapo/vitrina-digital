@@ -29,7 +29,7 @@ export function textoProyectos(n) {
   return `${n} proyecto${n === 1 ? '' : 's'}`;
 }
 
-/** Lee un parámetro de la URL. Ej.: proyecto.html?id=mi-casa → leerParametro('id') = 'mi-casa' */
+/** Lee un parámetro de la URL. Ej.: proyecto.html?id=casa-moderna → leerParametro('id') = 'casa-moderna' */
 export function leerParametro(nombre) {
   return new URLSearchParams(window.location.search).get(nombre);
 }

@@ -13,8 +13,8 @@ Una placa NFC fuera del aula abre en el celular una galería de proyectos. Desde
 | 1 | Acerca el celular a la placa NFC (o escanea el QR) | La placa abre `index.html` |
 | 2 | En «Elige una carrera» toca **Arquitectura** o **Multimedia y Producción Audiovisual** (toque 1) | `index.html` |
 | 3 | Ve los proyectos de esa carrera y toca uno (toque 2) | `carrera.html?c=arquitectura` |
-| 4 | Lee la información del proyecto (ficha) | `proyecto.html?id=mi-casa-mi-futuro` |
-| 5 | Toca **VER EN AR** → maqueta en 3D → **Ver en mi espacio** abre la cámara | `ar.html?id=mi-casa-mi-futuro` |
+| 4 | Lee la información del proyecto (ficha) | `proyecto.html?id=casa-moderna` |
+| 5 | Toca **VER EN AR** → maqueta en 3D → **Ver en mi espacio** abre la cámara | `ar.html?id=casa-moderna` |
 | 6 | Vuelve con la flecha (a la ficha → a su carrera → a todas las carreras) y sigue explorando | — |
 
 Los visitantes **nunca** inician sesión.
@@ -66,7 +66,7 @@ Todo el AR lo hace **`<model-viewer>`**, un componente web gratuito de Google. S
 y se usa como una etiqueta HTML:
 
 ```html
-<model-viewer src="modelos/mi-casa-mi-futuro.glb" ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" camera-controls>
+<model-viewer src="modelos/casa-moderna.glb" ar ar-modes="webxr scene-viewer quick-look" ar-placement="floor" camera-controls>
   <button slot="hotspot-ventanal" data-position="-0.08 0.07 0.096" data-normal="0 0 1">1</button>
 </model-viewer>
 ```
@@ -136,7 +136,7 @@ vitrina-digital/
 ├── data/
 │   └── proyectos.json  ← ★ TODO EL CONTENIDO. Lo único que edita el docente (H4)
 ├── modelos/
-│   ├── mi-casa-mi-futuro.glb   ← maqueta de referencia optimizada (8 MB, ver sección 7)
+│   ├── casa-moderna.glb        ← maqueta 1:25 optimizada (947 KB, ver sección 7)
 │   └── pantalla-cine.glb       ← televisor retro para la AR de Multimedia (generado por código)
 ├── videos/
 │   ├── cuentos-y-espias.mp4    ← video 720p (9 MB, H.264 + AAC)
@@ -151,6 +151,8 @@ vitrina-digital/
     ├── config.js       ← URL_PUBLICA (GitHub Pages) y URL de la placa
     ├── carrusel.js     ← carrusel de proyectos del hero
     ├── ar.js           ← lógica de la AR: modelo, puntos, guía, asistente
+    ├── ar-propia.js    ← «Ver en mi espacio» de la maqueta con three.js + WebXR (gestos, botones, tutorial)
+    ├── visor-planos.js ← galería de planos con visor grande y zoom
     ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa y modos
     ├── cine-360.js     ← modo 360° «cine curvo» (three.js, giroscopio)
     ├── karaoke.js      ← letra palabra por palabra sincronizada con el video
@@ -190,22 +192,64 @@ El celular solo abre la cámara para AR si la página está en **HTTPS**. Dos ca
 
 ## 7. La maqueta de Arquitectura
 
-**Modelo actual (de referencia):** «Modern Coastal Hillside Villa» por Visthétique (Sketchfab, https://skfb.ly/pKVRs), con licencia **CC BY 4.0**. Esa licencia obliga a nombrar al autor, enlazar la licencia e indicar los cambios, y eso ya aparece en la ficha. El original (113 MB, 949 mil triángulos) **no se sube al repositorio**.
+**Proyecto actual: «Casa Moderna», de Madeleine Morales. Es un PROYECTO DE EJEMPLO** (`"ejemplo": true` en el JSON muestra la etiqueta amarilla en la ficha y en la tarjeta).
+- **Modelo original:** «Modern Home» por Ciolan-T. Sebastian (Sketchfab, https://skfb.ly/6Yr8Q), licencia **CC BY 4.0**. La licencia **permite modificarlo y mostrarlo** si se nombra al autor, se enlaza la licencia y se indican los cambios; todo eso aparece en la ficha. **Adaptación del modelo:** Diana Espinoza (interiores, mobiliario y planos).
+- **Planos:** 9 láminas (A-01 a A-09) en WebP de 2000 px (de 7,7 MB a 664 KB, más miniaturas de ~10 KB). En la ficha, al tocar una se abre el visor grande (`js/visor-planos.js`), que permite pellizcar con dos dedos, usar la rueda del mouse o los botones − / +, tocar dos veces para acercar y pasar de lámina con ‹ ›.
+- **Textos:** la descripción, los 3 puntos y el asistente salen de la memoria descriptiva y de los cuadros de áreas, vanos y acabados de los planos. La materia sigue como `[EJEMPLO]`.
 
-Cómo se optimizó (scripts en `herramientas/maqueta/`, con Node.js):
-1. `optimizar.mjs`: quita el auto, los árboles del borde del lote y la grifería, que mide menos de 1 cm a esta escala. Escala la maqueta a **68 × 51 cm** en planta y 16 cm de alto, centrada y con la base en y = 0, y une y simplifica la geometría (de 949 mil a 229 mil triángulos y de 210 a 37 mallas).
-2. `texturas.mjs`: pasa las texturas a **WebP de máximo 1024 px** y comprime la geometría con **Draco**. Resultado: **8 MB**.
-
+### Optimización (C2)
+`herramientas/maqueta/optimizar.mjs` (con Node.js):
 ```bash
 cd herramientas/maqueta && npm install
-node optimizar.mjs ruta/al/original.glb intermedio.glb 0.68 0.25 0.002
-node texturas.mjs intermedio.glb ../../modelos/mi-casa-mi-futuro.glb 1024
+node optimizar.mjs ruta/al/original.glb ../../modelos/casa-moderna.glb 25
 ```
-> Son dos pasos separados a propósito: en Windows, `sharp` (texturas) falla si corre en el mismo proceso que la geometría pesada.
+1. Pasa el modelo, que está en metros reales, a **maqueta 1:25** (59 × 26 cm en planta y 33 cm de alto), centrada y con la base en y = 0.
+2. Junta los materiales de color liso en una paleta y une las mallas: de **339 a 6 llamadas de dibujo**, que era lo que hacía lento al celular. **No se simplifican los triángulos**: son solo 12 382 y así el interior queda intacto.
+3. Texturas a **WebP**. **Sin Draco ni meshopt**: el archivo ya es chico y así el celular no tiene que descargar un decodificador.
 
-Los 3 puntos están sobre partes reales de esta casa: **terraza sobre la cochera** (adelante), **ventanales hacia la piscina** y **piscina** (atrás). Sus textos siguen marcados `[EJEMPLO]` hasta tener la ficha real de la estudiante. La escala «aprox. 1:60» es una estimación hecha a partir del tamaño del auto y de las puertas del modelo.
+| | Antes | Después |
+|---|---|---|
+| Peso | 2,1 MB (la casa anterior: 8,1 MB) | **947 KB** |
+| Llamadas de dibujo / materiales | 339 / 33 | **6 / 6** |
+| Triángulos | 12 382 | 12 382 |
+| Tiempo hasta verse con 4G (9 Mbps, medido) | 3,3 s (la casa anterior: 9,8 s) | **1,7 s** |
 
-En el inicio, la maqueta se descarga **después** de que la página terminó de cargar (y no se descarga con «ahorro de datos»), para que las carreras aparezcan rápido.
+En la página: mientras carga se ve el **póster** (`img/casa-moderna-render.webp`, una captura del modelo). La luz es el entorno neutro de model-viewer, sin descargas extra, y la sombra se calcula una vez cuando la maqueta está quieta. En la AR propia la sombra es una imagen, así que no hay sombras en tiempo real.
+
+### Adelanto 3D (C3)
+La propuesta de valor es **«Ver en mi espacio»**, por eso la vista 3D es solo un adelanto:
+- gira sola y despacio, con giro horizontal limitado a ±40° y el ángulo vertical fijo, sin zoom ni desplazamiento;
+- al tocar un punto aparece «Disponible en “Ver en mi espacio”»;
+- el botón principal es grande, con un brillo que invita a tocarlo, y debajo dice «Ingresa a “Ver en mi espacio” para recorrer la maqueta».
+
+En **computadora** se ve el mismo adelanto con un **QR** («Escanea con tu celular para verla en tu espacio»), que apunta a `URL_PUBLICA/ar.html?id=casa-moderna&src=qr`.
+**Excepción en iPhone:** Quick Look no puede mostrar los puntos ni el asistente, así que en iPhone se leen completos en la vista 3D.
+
+### «Ver en mi espacio» con AR propia (C4) — `js/ar-propia.js`
+En Android con Chrome se usa una **AR propia con three.js + WebXR**: en la AR de model-viewer los gestos son fijos y un dedo mueve la maqueta en vez de girarla.
+
+| Gesto / botón | Qué hace |
+|---|---|
+| 1 dedo arrastrando | Gira la maqueta sobre su eje (no la mueve de lugar) |
+| 2 dedos pellizcando | Agranda / achica (solo en «Maqueta») |
+| 2 dedos arrastrando | Mueve la maqueta sobre la mesa |
+| Doble toque | Vuelve al tamaño y la posición de colocación |
+| ⟲ ⟳ | Gira 45° con animación |
+| − + | Achica / agranda |
+| ⊙ Centrar | Lleva la maqueta al punto de la mesa al que apuntas |
+| 🏠 Ver interior | Completa → **Sin techo** → **Planta baja**: un corte horizontal a la altura de cada losa (`ar.cortes` en el JSON) |
+| Maqueta 1:25 / Escala real 1:1 | En 1:1 la casa mide 14,8 m: apunta al piso, colócala y camina dentro |
+| ✕ Salir · ? | Salir · volver a ver el tutorial |
+
+- **Inicio rápido:** three.js y el modelo se **precargan** mientras la persona mira el adelanto. Al entrar aparece «Buscando superficie…», luego una **retícula con la sombra de la casa** donde va a quedar, y un toque la coloca.
+- **Tutorial de 3 pasos**, siempre al entrar: avanza solo cada 3 s o con un toque, tiene «Ocultar tutorial» en la esquina y «?» para volver a verlo. Registra `tutorial_ocultado` con el paso.
+- Los puntos 1-2-3 siguen a la maqueta y se ven tenues si una pared los tapa; con «Ver interior» desaparecen los que quedan sobre el corte. La tarjeta y el asistente funcionan dentro de la AR.
+- **Red de seguridad:** si el celular no soporta WebXR con hit-test y DOM overlay, o si algo falla al iniciar, se abre **automáticamente la AR de model-viewer**.
+- **Interruptor para la presentación:**
+  - `"configuracion": { "arPropia": false }` en `data/proyectos.json` usa siempre la AR anterior (el admin lo podrá cambiar en la Fase 5);
+  - o abre `ar.html?id=casa-moderna&ar=clasica` para forzarla solo en ese celular.
+- **iPhone:** Quick Look (AR de Apple). Antes de abrirlo aparece una hoja con sus gestos (arrastrar, girar con dos dedos, pellizcar, cambiar entre «AR» y «Objeto»).
+- **Modo de prueba en la computadora:** `ar.html?id=casa-moderna&arprueba=1` abre la misma experiencia sin cámara, con el mouse. Lo usan las pruebas automáticas.
 
 ### Para usar el modelo propio de la estudiante
 
@@ -225,7 +269,7 @@ En el inicio, la maqueta se descarga **después** de que la página terminó de 
 - **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
 
 ### Pruebas automáticas (carpeta `pruebas/`)
-- `npm test` corre `qr.test.mjs` (el QR, ver abajo), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
+- `npm test` corre `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR
@@ -275,7 +319,8 @@ Abrir `data/proyectos.json` y, dentro de `"proyectos"`, copiar un bloque `{ … 
 
 ## Créditos técnicos
 
-- Modelo 3D de referencia: [Modern Coastal Hillside Villa](https://skfb.ly/pKVRs) por Visthétique (Sketchfab), licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Modificado: sin auto, sin árboles del borde ni grifería, geometría simplificada y texturas optimizadas.
+- Modelo 3D original de Arquitectura: [Modern Home](https://skfb.ly/6Yr8Q) por Ciolan-T. Sebastian (Sketchfab), licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Adaptación del modelo: Diana Espinoza (interiores, mobiliario y planos); optimizado para celular.
+- [three.js](https://threejs.org) 0.170 (licencia MIT): AR propia y modo 360°.
 - Logo de la Universidad Ecotec: propiedad de la universidad.
 
 - [model-viewer](https://modelviewer.dev) (Google, licencia Apache 2.0)

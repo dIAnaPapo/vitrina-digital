@@ -87,7 +87,8 @@
           </div>
           <div class="proyecto-pie">
             <div>
-              <p>${[p.estudiante, p.materia].map(t => (t ?? '').replace('[EJEMPLO]', '').trim()).filter(Boolean).map(escapar).join(' · ')}</p>
+              ${p.ejemplo ? '<span class="sello-ejemplo">Proyecto de ejemplo</span>' : ''}
+              <p>${[p.estudiante, p.materia].filter(t => t && !t.includes('[EJEMPLO]')).map(escapar).join(' · ')}</p>
               ${p.ar ? `<span class="sello-ar">${iconos.ar.replace('<svg', '<svg width="12" height="12"')} DISPONIBLE EN AR</span>` : ''}
             </div>
             <span class="circulo">${iconos.flecha}</span>

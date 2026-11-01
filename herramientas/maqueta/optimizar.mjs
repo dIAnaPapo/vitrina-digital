@@ -1,62 +1,67 @@
-// Optimiza «Modern Coastal Hillside Villa» para celular.
-// Paso 1 (geometría). Uso: node optimizar.mjs entrada.glb intermedio.glb [ancho_m=0.68] [ratio=0.25] [error=0.002]
+// =========================================================
+// optimizar.mjs — prepara el modelo de Arquitectura para el celular
+//
+// Uso:  cd herramientas/maqueta  →  npm install  →
+//       node optimizar.mjs ruta/al/original.glb ../../modelos/casa-moderna.glb 25
+//
+// Qué hace, en orden:
+//   1. Pasa el modelo (en metros reales) a MAQUETA: lo centra, deja la base en y = 0
+//      y lo divide por la escala (25 → maqueta 1:25 de unos 59 cm de ancho).
+//      La AR propia lo vuelve a multiplicar ×25 para «Escala real 1:1».
+//   2. Reduce las «llamadas de dibujo» (lo que más pone lento a un celular):
+//      une materiales de color liso en una paleta (palette) y junta las mallas
+//      que comparten material (join). El modelo ya es liviano en triángulos,
+//      así que NO se simplifica: el interior queda intacto.
+//   3. Pasa las texturas a WebP (máx. 1024 px; las chicas se quedan como están).
+//   4. Sin compresión Draco/meshopt: el archivo queda chico y así el celular
+//      no tiene que descargar un decodificador antes de mostrarlo.
+// =========================================================
 import { NodeIO } from '@gltf-transform/core';
-import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
-import { dedup, prune, weld, simplify, flatten, join, getBounds } from '@gltf-transform/functions';
-import { MeshoptSimplifier } from 'meshoptimizer';
+import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
+import { dedup, prune, weld, flatten, join, palette, getBounds } from '@gltf-transform/functions';
+import sharp from 'sharp';
+import { statSync } from 'node:fs';
 
-const [, , entrada, salida, ancho = '0.68', ratio = '0.25', error = '0.002', tex = '1024'] = process.argv;
-
-// Lo que se quita: el auto, los dos «bosques» del borde del lote y la grifería
-// (mide menos de 1 cm a escala de maqueta y pesaba ~195 mil triángulos).
-const QUITAR = new Set(['Porsche', 'Oak+Tree_260112', 'DogwoodTree.001', 'Faucet1', 'Faucet2']);
-
+const [, , entrada, salida, escala = '25'] = process.argv;
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 const doc = await io.read(entrada);
-const escena = doc.getRoot().getDefaultScene();
+const raiz = doc.getRoot();
+const escena = raiz.getDefaultScene();
 
-// 1. Quitar objetos
-let quitados = 0;
-escena.traverse(n => { if (QUITAR.has(n.getName())) { n.dispose(); quitados++; } });
-console.log('Objetos quitados:', quitados);
-await doc.transform(prune());
+function medir(titulo) {
+  let tri = 0;
+  for (const m of raiz.listMeshes()) for (const p of m.listPrimitives()) tri += (p.getIndices()?.getCount() ?? p.getAttribute('POSITION').getCount()) / 3;
+  const primitivas = raiz.listMeshes().reduce((n, m) => n + m.listPrimitives().length, 0);
+  console.log(`${titulo}: ${Math.round(tri)} triángulos · ${primitivas} llamadas de dibujo · ${raiz.listMaterials().length} materiales · ${raiz.listTextures().length} texturas`);
+}
+medir('ANTES');
 
-// 2. Escalar como maqueta: lo más largo en planta = «ancho» metros, centrada, base en y=0
+// 1. Maqueta: centrada, base en y = 0, dividida por la escala
 const b = getBounds(escena);
-const tam = b.max.map((m, i) => m - b.min[i]);
-const s = Number(ancho) / Math.max(tam[0], tam[2]);
+const s = 1 / Number(escala);
 const cx = (b.min[0] + b.max[0]) / 2, cz = (b.min[2] + b.max[2]) / 2;
 const maqueta = doc.createNode('maqueta').setScale([s, s, s]).setTranslation([-cx * s, -b.min[1] * s, -cz * s]);
 for (const hijo of escena.listChildren()) { escena.removeChild(hijo); maqueta.addChild(hijo); }
 escena.addChild(maqueta);
 const b2 = getBounds(escena);
-console.log(`Maqueta: ${(b2.max[0] - b2.min[0]).toFixed(3)} × ${(b2.max[1] - b2.min[1]).toFixed(3)} × ${(b2.max[2] - b2.min[2]).toFixed(3)} m · base y=${b2.min[1].toFixed(4)} · escala ${s.toExponential(3)}`);
+console.log(`Maqueta 1:${escala}: ${(b2.max[0] - b2.min[0]).toFixed(3)} × ${(b2.max[1] - b2.min[1]).toFixed(3)} × ${(b2.max[2] - b2.min[2]).toFixed(3)} m · base y=${b2.min[1].toFixed(4)}`);
+console.log(`Centro original (para convertir coordenadas reales): x=${cx.toFixed(3)} z=${cz.toFixed(3)} · y mínima=${b.min[1].toFixed(3)}`);
 
-// 3. Dónde quedó cada parte (para ubicar los puntos de información), en metros
-const f = (v) => v.map(x => x.toFixed(3)).join(' ');
-escena.traverse(n => {
-  if (!n.getMesh() && n.listChildren().length === 0) return;
-  const nombre = n.getName();
-  if (/Water|Glass|Cube\.029|Stair|Door|sunbed|Cube\.0(0|1)\d$|Plane\.00[1-4]$|Cylinder|Bonsai|^Cube$/.test(nombre) && n.listParents().length) {
-    const bb = getBounds(n);
-    const c = bb.min.map((m, i) => (m + bb.max[i]) / 2);
-    console.log(`  ${nombre.padEnd(34)} centro [${f(c)}] min [${f(bb.min)}] max [${f(bb.max)}]`);
-  }
-});
+// 2. Menos llamadas de dibujo
+await doc.transform(dedup(), prune(), flatten(), weld(), palette({ min: 2 }), join(), dedup(), prune());
 
-// 4. Geometría: unir, soldar y simplificar
-await doc.transform(
-  dedup(),
-  flatten(),
-  join(),
-  weld(),
-  simplify({ simplifier: MeshoptSimplifier, ratio: Number(ratio), error: Number(error) }),
-  prune()
-);
+// 3. Texturas a WebP
+doc.createExtension(EXTTextureWebP).setRequired(true);
+for (const t of raiz.listTextures()) {
+  const img = Buffer.from(t.getImage());
+  const { width, height } = await sharp(img).metadata();
+  const k = Math.min(1, 1024 / Math.max(width, height));
+  const webp = await sharp(img).resize(Math.round(width * k), Math.round(height * k), { fit: 'fill', kernel: 'lanczos3' })
+    .webp({ quality: 82, effort: 5 }).toBuffer();
+  t.setImage(new Uint8Array(webp)).setMimeType('image/webp');
+  if (t.getURI()) t.setURI(t.getURI().replace(/\.\w+$/, '.webp'));
+}
 
-let triangulos = 0;
-for (const m of doc.getRoot().listMeshes()) for (const p of m.listPrimitives()) triangulos += (p.getIndices()?.getCount() ?? 0) / 3;
-console.log(`Triángulos: ${Math.round(triangulos)} · mallas: ${doc.getRoot().listMeshes().length} · texturas: ${doc.getRoot().listTextures().length}`);
+medir('DESPUÉS');
 await io.write(salida, doc);
-const { statSync } = await import('node:fs');
-console.log(`Archivo: ${(statSync(salida).size / 1024 / 1024).toFixed(2)} MB`);
+console.log(`Peso: ${(statSync(entrada).size / 1024).toFixed(0)} KB → ${(statSync(salida).size / 1024).toFixed(0)} KB`);

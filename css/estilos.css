@@ -343,6 +343,42 @@ a.chip-claro:hover { background: var(--hielo); }
 .letra h3 { font: 600 14px var(--texto); text-transform: uppercase; letter-spacing: .08em; color: var(--azul); margin: 18px 0 4px; }
 .letra p { margin: 0; line-height: 1.7; }
 
-/* Crédito del modelo 3D de referencia (licencia CC BY) */
+/* Crédito del modelo 3D (licencia CC BY) */
 .credito-modelo { margin: 24px 0 0; padding: 14px 18px; border-radius: 16px; background: var(--hielo); font-size: 13px; line-height: 1.55; color: var(--tinta); }
+.credito-modelo p { margin: 0; }
+.credito-modelo p + p { margin-top: 4px; }
 .credito-modelo a { color: var(--azul); font-weight: 600; }
+
+/* Etiqueta «PROYECTO DE EJEMPLO» (ficha y tarjetas) */
+.sello-ejemplo {
+  display: inline-block; margin: 0 0 12px; padding: 6px 14px; border-radius: 999px;
+  background: #FFD60A; color: #1a1a1a; font: 700 12px var(--texto); letter-spacing: .1em; text-transform: uppercase;
+}
+.proyecto .sello-ejemplo { margin: 0 0 8px; padding: 3px 10px; font-size: 10px; }
+
+/* ---------- Planos (miniaturas que abren el visor) ---------- */
+.planos { margin-top: 40px; }
+.planos-lista { list-style: none; margin: 16px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+@media (min-width: 900px) { .planos-lista { grid-template-columns: repeat(3, 1fr); } }
+.plano {
+  width: 100%; padding: 0; border: 1px solid rgba(6, 98, 174, .18); border-radius: 16px; overflow: hidden;
+  background: var(--blanco); cursor: zoom-in; text-align: left; font: inherit; color: var(--tinta);
+  transition: box-shadow .2s, transform .2s;
+}
+.plano:hover { box-shadow: 0 10px 24px rgba(6, 98, 174, .18); transform: translateY(-2px); }
+.plano img { width: 100%; height: auto; aspect-ratio: 640 / 452; object-fit: cover; }
+.plano span { display: block; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+
+/* ---------- Visor grande de planos (js/visor-planos.js) ---------- */
+.visor-planos { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; background: rgba(8, 20, 40, .94); color: var(--blanco); }
+.visor-planos-barra { display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 12px 10px 18px; }
+.visor-planos-titulo { flex: 1; margin: 0; font-weight: 600; font-size: 14px; }
+.visor-planos-lienzo { flex: 1; min-height: 0; overflow: hidden; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.visor-planos-lienzo img { max-width: 100%; max-height: 100%; background: #fff; transform-origin: center; user-select: none; -webkit-user-drag: none; }
+.visor-planos-controles { display: flex; justify-content: center; gap: 12px; padding: 12px; }
+.visor-planos-ayuda { margin: 0; padding: 0 12px calc(12px + env(safe-area-inset-bottom)); text-align: center; font-size: 12px; opacity: .8; }
+.visor-boton {
+  width: 48px; height: 48px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--blanco); color: var(--azul); font: 700 22px/1 var(--texto); display: grid; place-items: center;
+}
+body.visor-abierto { overflow: hidden; }

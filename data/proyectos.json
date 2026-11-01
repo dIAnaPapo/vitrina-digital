@@ -1,6 +1,9 @@
 {
   "_instrucciones": "ESTE ES EL ÚNICO ARCHIVO QUE EL DOCENTE EDITA CADA SEMESTRE. Cambia textos, imágenes y modelos aquí; no hace falta tocar el código. Los textos marcados como [EJEMPLO] deben reemplazarse con la ficha real del estudiante.",
   "periodoActual": "Semestre 2 - 2026",
+  "configuracion": {
+    "arPropia": true
+  },
   "carreras": [
     {
       "id": "arquitectura",
@@ -21,205 +24,250 @@
   ],
   "proyectos": [
     {
-      "id": "mi-casa-mi-futuro",
+      "id": "casa-moderna",
       "carrera": "arquitectura",
-      "titulo": "Mi casa, mi futuro",
-      "ubicacion": "Chongón, Guayas",
-      "estudiante": "Arllys Ramos",
-      "materia": "Fundamentos de Arquitectura 1",
-      "periodo": "2026-2",
-      "descripcion": "[EJEMPLO] Vivienda unifamiliar de dos plantas construida sobre un terreno en pendiente: la cochera aprovecha el nivel más bajo, los volúmenes blancos se abren con grandes ventanales hacia la piscina y las terrazas se escalonan siguiendo el terreno.",
-      "imagenes": [
+      "titulo": "Casa Moderna",
+      "ejemplo": true,
+      "ubicacion": "",
+      "estudiante": "Madeleine Morales",
+      "materia": "[EJEMPLO] Materia por confirmar",
+      "periodo": "Semestre 2 - 2026",
+      "descripcion": "Vivienda unifamiliar de dos plantas y terraza de cubierta, con una huella aproximada de 14,8 × 6,4 m y 129,14 m² de área bruta. La planta baja agrupa la zona social: hall de acceso en el volumen revestido de madera, sala de doble altura frente al muro cortina, comedor bajo el mezzanine y cocina independiente; el garaje integra lavandería, calentador y baño de visitas. En la planta alta, la escalera de huella abierta llega al mezzanine (sala de TV), que distribuye al dormitorio master; el ala izquierda reúne el estudio, el baño general y el dormitorio 2, y desde la terraza parte la escalera a la cubierta.",
+      "portada": "img/casa-moderna-render.webp",
+      "imagenes": [],
+      "planos": [
         {
-          "src": "img/mi-casa-render.webp",
-          "alt": "Vista 3D de la maqueta: casa blanca de dos plantas sobre un terreno en pendiente, con cochera, entrada revestida en piedra y madera, terraza con baranda de vidrio y piscina"
+          "src": "img/planos/A-01_Planta_Baja.webp",
+          "mini": "img/planos/A-01_Planta_Baja-mini.webp",
+          "titulo": "Planta baja",
+          "alt": "Plano de la planta baja con garaje y lavandería, baño de visitas, hall, sala de doble altura, comedor y cocina"
         },
         {
-          "src": "img/mi-casa-2.svg",
-          "alt": "Planta arquitectónica de la planta baja con sala, cocina y área social"
+          "src": "img/planos/A-02_Planta_Alta.webp",
+          "mini": "img/planos/A-02_Planta_Alta-mini.webp",
+          "titulo": "Planta alta",
+          "alt": "Plano de la planta alta con dormitorio master, dormitorio 2, estudio, baño general, sala de TV en el mezzanine y terraza"
+        },
+        {
+          "src": "img/planos/A-03_Planta_Cubierta.webp",
+          "mini": "img/planos/A-03_Planta_Cubierta-mini.webp",
+          "titulo": "Planta de cubierta",
+          "alt": "Plano de la cubierta con la terraza, las jardineras y la escalera de acceso"
+        },
+        {
+          "src": "img/planos/A-04_Fachadas_Frontal_Posterior.webp",
+          "mini": "img/planos/A-04_Fachadas_Frontal_Posterior-mini.webp",
+          "titulo": "Fachadas frontal y posterior",
+          "alt": "Fachadas frontal y posterior de la vivienda"
+        },
+        {
+          "src": "img/planos/A-05_Fachadas_Laterales.webp",
+          "mini": "img/planos/A-05_Fachadas_Laterales-mini.webp",
+          "titulo": "Fachadas laterales",
+          "alt": "Fachadas laterales de la vivienda"
+        },
+        {
+          "src": "img/planos/A-06_Cortes.webp",
+          "mini": "img/planos/A-06_Cortes-mini.webp",
+          "titulo": "Cortes",
+          "alt": "Cortes de la vivienda que muestran la doble altura de la sala y los niveles"
+        },
+        {
+          "src": "img/planos/A-07_Plantas_Presentacion.webp",
+          "mini": "img/planos/A-07_Plantas_Presentacion-mini.webp",
+          "titulo": "Plantas de presentación",
+          "alt": "Vistas cenitales a color de la planta baja y la planta alta con los ambientes amoblados"
+        },
+        {
+          "src": "img/planos/A-08_Cuadros_y_Memoria.webp",
+          "mini": "img/planos/A-08_Cuadros_y_Memoria-mini.webp",
+          "titulo": "Cuadros y memoria",
+          "alt": "Cuadro de áreas, cuadro de puertas y ventanas, cuadro de acabados y memoria descriptiva"
+        },
+        {
+          "src": "img/planos/A-09_Perspectivas.webp",
+          "mini": "img/planos/A-09_Perspectivas-mini.webp",
+          "titulo": "Perspectivas",
+          "alt": "Perspectivas exteriores de la vivienda"
         }
       ],
       "creditoModelo": {
-        "titulo": "Modern Coastal Hillside Villa",
-        "autor": "Visthétique",
+        "titulo": "Modern Home",
+        "autor": "Ciolan-T. Sebastian",
         "plataforma": "Sketchfab",
-        "url": "https://skfb.ly/pKVRs",
+        "url": "https://skfb.ly/6Yr8Q",
         "licencia": "CC BY 4.0",
         "licenciaUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "cambios": "Para la vitrina se quitaron el auto, los árboles del borde del lote y la grifería, se simplificó la geometría y se optimizaron las texturas para celular."
+        "adaptacion": "Diana Espinoza",
+        "cambios": "Interiores, mobiliario y planos elaborados sobre el modelo original; para la vitrina se optimizó para celular."
       },
       "ar": {
-        "modelo": "modelos/mi-casa-mi-futuro.glb",
+        "tipo": "maqueta",
+        "modelo": "modelos/casa-moderna.glb",
+        "poster": "img/casa-moderna-render.webp",
         "modeloIOS": "",
-        "escala": "aprox. 1:60",
-        "camara": "25deg 58deg 55%",
-        "alt": "Maqueta 3D de una casa blanca de dos plantas sobre un terreno en pendiente, con cochera, terrazas, ventanales y piscina",
+        "escala": "1:25",
+        "escalaNumero": 25,
+        "camara": "25deg 62deg 80%",
+        "cortes": [
+          {
+            "nombre": "Sin techo",
+            "altura": 0.234
+          },
+          {
+            "nombre": "Planta baja",
+            "altura": 0.116
+          }
+        ],
+        "alt": "Maqueta 3D de una casa moderna de dos plantas con fachada blanca, volumen revestido de madera, muro cortina de doble altura, garaje y terraza en la cubierta",
         "puntos": [
           {
-            "id": "terraza",
-            "titulo": "Terraza sobre la cochera",
-            "texto": "[EJEMPLO] La cochera está en el nivel más bajo del terreno y su techo se aprovecha como terraza, protegida con una baranda de vidrio.",
-            "posicion": "-0.063 0.076 0.099",
+            "id": "sala",
+            "titulo": "Sala de doble altura",
+            "texto": "La sala tiene doble altura frente al muro cortina de 6 paños (3,42 × 5,08 m), que ilumina también el mezzanine de la planta alta.",
+            "posicion": "0.0642 0.056 0.0648",
+            "normal": "0 0 1"
+          },
+          {
+            "id": "dormitorio",
+            "titulo": "Dormitorio master",
+            "texto": "Dormitorio master de 10,54 m² con piso de madera, en la planta alta. Se llega por el mezzanine (sala de TV), al que conduce la escalera de huella abierta.",
+            "posicion": "0.2082 0.152 0.0088",
             "normal": "0 1 0"
           },
           {
-            "id": "ventanal",
-            "titulo": "Ventanales hacia la piscina",
-            "texto": "[EJEMPLO] Las dos plantas se abren con ventanales de piso a techo hacia la piscina: entra luz natural todo el día y el interior se conecta con la terraza.",
-            "posicion": "0.005 0.080 -0.036",
-            "normal": "0 0 -1"
-          },
-          {
-            "id": "piscina",
-            "titulo": "Piscina y terraza posterior",
-            "texto": "[EJEMPLO] La piscina está junto a la terraza posterior, con tumbonas y un comedor exterior al mismo nivel de la sala.",
-            "posicion": "0.062 0.056 -0.158",
+            "id": "terraza",
+            "titulo": "Terraza de cubierta",
+            "texto": "Terraza de 22,04 m² sobre la cubierta, con deck y jardineras. Se sube por la escalera que parte de la terraza de la planta alta.",
+            "posicion": "-0.1558 0.264 0.0008",
             "normal": "0 1 0"
           }
         ]
       },
       "asistente": {
         "sugeridas": [
-          "¿Por qué los ventanales son tan grandes?",
-          "¿Dónde está la cochera?",
-          "¿Cuántos dormitorios tiene?"
+          "¿Cuántos metros tiene la casa?",
+          "¿Qué hay en la planta alta?",
+          "¿Dónde está el garaje?"
         ],
         "pasajes": [
           {
-            "punto": "ventanal",
-            "texto": "[EJEMPLO] Los ventanales van de piso a techo y miran hacia la piscina, para tener luz natural todo el día y vista al jardín.",
-            "claves": [
-              "ventanal",
-              "ventanales",
-              "ventana",
-              "vidrio",
-              "luz",
-              "iluminación",
-              "grande",
-              "vista"
-            ]
-          },
-          {
-            "punto": "ventanal",
-            "texto": "[EJEMPLO] La sala, el comedor y la cocina forman un solo espacio abierto detrás de los ventanales.",
+            "punto": "sala",
+            "texto": "La sala tiene doble altura y está frente a un muro cortina de vidrio de 6 paños, de 3,42 × 5,08 m.",
             "claves": [
               "sala",
-              "comedor",
+              "doble altura",
+              "ventanal",
+              "muro cortina",
+              "vidrio",
+              "ventana",
+              "luz"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "En la planta baja están el hall de acceso, la sala de doble altura, el comedor bajo el mezzanine y la cocina independiente con ventanas al este.",
+            "claves": [
+              "planta baja",
               "cocina",
-              "espacio",
-              "abierto",
-              "planta baja"
-            ]
-          },
-          {
-            "punto": null,
-            "texto": "[EJEMPLO] Los volúmenes son blancos y lisos; la entrada principal se marca con un muro revestido en piedra y una puerta de madera.",
-            "claves": [
-              "madera",
-              "piedra",
-              "material",
-              "materiales",
-              "revestimiento",
-              "fachada",
-              "color",
-              "blanco",
+              "comedor",
+              "hall",
               "entrada",
-              "puerta"
+              "primer piso"
             ]
           },
           {
-            "punto": null,
-            "texto": "[EJEMPLO] La planta alta tiene tres dormitorios: uno principal con baño propio y dos dormitorios secundarios que comparten baño.",
+            "punto": "dormitorio",
+            "texto": "La planta alta tiene el dormitorio master (10,54 m²), el dormitorio 2 (6,26 m²), el estudio, el baño general y la sala de TV en el mezzanine.",
             "claves": [
+              "planta alta",
               "dormitorio",
               "dormitorios",
               "habitación",
               "habitaciones",
               "cuartos",
-              "baño",
-              "baños"
+              "master",
+              "segundo piso",
+              "estudio"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "El garaje mide 17,86 m², tiene piso de concreto pulido y un portón seccional de aluminio; integra la lavandería, el calentador y el baño de visitas.",
+            "claves": [
+              "garaje",
+              "garage",
+              "cochera",
+              "auto",
+              "carro",
+              "lavandería",
+              "portón"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "La vivienda tiene 129,14 m² de área bruta construida: 72,75 m² en planta baja y 56,39 m² en planta alta, con una huella aproximada de 14,8 × 6,4 m.",
+            "claves": [
+              "metros",
+              "m2",
+              "área",
+              "tamaño",
+              "grande",
+              "mide",
+              "superficie",
+              "cuánto"
             ]
           },
           {
             "punto": "terraza",
-            "texto": "[EJEMPLO] La cochera está en el nivel más bajo, junto a la calle de acceso, y su techo se usa como terraza con baranda de vidrio.",
+            "texto": "La terraza de cubierta mide 22,04 m² y tiene deck y jardineras; además, la planta alta tiene una terraza de 7,10 m² con deck de madera.",
             "claves": [
-              "cochera",
-              "garaje",
-              "garage",
-              "carro",
-              "auto",
-              "estacionamiento",
               "terraza",
-              "baranda"
-            ]
-          },
-          {
-            "punto": "piscina",
-            "texto": "[EJEMPLO] La piscina está junto a la terraza posterior, con tumbonas y un comedor exterior conectados con la sala.",
-            "claves": [
-              "piscina",
-              "agua",
-              "tumbonas",
-              "jardín",
-              "área social",
-              "patio",
-              "exterior"
+              "cubierta",
+              "azotea",
+              "techo",
+              "deck",
+              "jardinera"
             ]
           },
           {
             "punto": null,
-            "texto": "[EJEMPLO] La casa se adapta a un terreno en pendiente: las terrazas y escaleras exteriores siguen la forma del cerro.",
+            "texto": "Los muros son blancos; los pisos sociales y de dormitorios son de madera de acacia, los baños de porcelanato gris y las barandas de vidrio templado con pasamanos de acero inoxidable. El hall está en un volumen revestido de madera.",
             "claves": [
-              "pendiente",
-              "terreno",
-              "cerro",
-              "ladera",
-              "desnivel",
+              "material",
+              "materiales",
+              "madera",
+              "piso",
+              "acabado",
+              "acabados",
+              "baranda",
+              "color",
+              "blanco",
+              "fachada"
+            ]
+          },
+          {
+            "punto": null,
+            "texto": "Una escalera de huella abierta sube al mezzanine (sala de TV) y, desde la terraza de la planta alta, otra escalera llega a la cubierta.",
+            "claves": [
               "escalera",
-              "escaleras"
+              "escaleras",
+              "gradas",
+              "subir",
+              "mezzanine"
             ]
           },
           {
             "punto": null,
-            "texto": "[EJEMPLO] La vivienda tiene 180 m² de construcción en un terreno de 400 m² en Chongón.",
+            "texto": "Es un proyecto de ejemplo de la estudiante Madeleine Morales para la vitrina de Arquitectura.",
             "claves": [
-              "metros",
-              "m2",
-              "tamaño",
-              "área",
-              "terreno",
-              "grande",
-              "superficie",
-              "cuánto mide"
-            ]
-          },
-          {
-            "punto": null,
-            "texto": "[EJEMPLO] La ventilación es cruzada: las ventanas están en fachadas opuestas para que el aire circule sin aire acondicionado.",
-            "claves": [
-              "ventilación",
-              "aire",
-              "calor",
-              "clima",
-              "fresco",
-              "sostenible",
-              "sustentable"
-            ]
-          },
-          {
-            "punto": null,
-            "texto": "El proyecto lo diseñó la estudiante Arllys Ramos en la materia Fundamentos de Arquitectura 1.",
-            "claves": [
-              "materia",
-              "curso",
-              "taller",
-              "periodo",
-              "semestre",
-              "autor",
               "estudiante",
+              "autor",
+              "autora",
+              "quién",
               "hizo",
-              "diseñó"
+              "diseñó",
+              "materia"
             ]
           }
         ]
@@ -244,7 +292,11 @@
         "pantallaHero": "img/cuentos-y-espias-pantalla.webp",
         "modeloIOS": "",
         "escala": "60 cm de ancho",
-        "modos": ["televisor", "sin-televisor", "360"],
+        "modos": [
+          "televisor",
+          "sin-televisor",
+          "360"
+        ],
         "modoInicial": "televisor",
         "alt": "Televisor retro azul con una pantalla de cine 16:9 que reproduce el video Cuentos y Espías",
         "puntos": []

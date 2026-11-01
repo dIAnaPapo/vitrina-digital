@@ -1,7 +1,7 @@
 <!doctype html>
 <!--
   PASO 5 DEL FLUJO: la experiencia de realidad aumentada.
-  URL: ar.html?id=mi-casa-mi-futuro   → maqueta con puntos y asistente (js/ar.js)
+  URL: ar.html?id=casa-moderna   → maqueta con puntos y asistente (js/ar.js)
        ar.html?id=cuentos-y-espias    → pantalla de cine con video y letra (js/ar-video.js)
 
   Todo gira alrededor de <model-viewer>, un componente web de Google:
@@ -23,6 +23,15 @@
   <meta name="theme-color" content="#0662AE">
   <link rel="stylesheet" href="css/estilos.css">
   <link rel="stylesheet" href="css/ar.css">
+  <!-- three.js (para la AR propia y el modo 360°): misma versión fija para todos los módulos -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+  </script>
   <!-- La librería de AR. Una sola línea, sin instalar nada. -->
   <script type="module" src="https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js"></script>
 </head>
@@ -65,7 +74,22 @@
     <!-- Barra de carga del modelo -->
     <div slot="progress-bar" class="progreso" aria-hidden="true"><div class="progreso-relleno" id="progreso"></div></div>
 
-    <!-- Botón propio para entrar a AR (reemplaza al de Google) -->
+    <!-- Maquetas: botón principal propio (abre la AR propia, la de model-viewer o Quick Look) -->
+    <div class="entrar-ar" id="entrar-ar" hidden>
+      <button class="boton-ar boton-ar-principal" id="ver-en-mi-espacio" type="button">
+        Ver en mi espacio
+        <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
+      </button>
+      <p class="entrar-ar-texto">Ingresa a «Ver en mi espacio» para recorrer la maqueta</p>
+    </div>
+
+    <!-- Computadora (sin AR): QR para abrir esta misma página en el celular -->
+    <div class="ar-qr" id="ar-qr" hidden>
+      <div class="ar-qr-codigo" id="ar-qr-codigo" role="img" aria-label="Código QR para abrir la maqueta en el celular"></div>
+      <p>Escanea con tu celular para verla en tu espacio</p>
+    </div>
+
+    <!-- Video: botón de model-viewer para entrar a su AR (WebXR) -->
     <button slot="ar-button" class="boton-ar" type="button">
       Ver en mi espacio
       <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg></span>
@@ -154,6 +178,76 @@
       </div>
     </section>
   </model-viewer>
+
+  <!-- ===== AR propia (three.js + WebXR, Android). Es la capa HTML que se ve sobre la cámara. ===== -->
+  <div class="capa-ar" id="capa-ar" hidden>
+    <!-- Capa invisible que recibe los dedos: girar, pellizcar, mover, doble toque -->
+    <div class="ar-gestos" id="ar-gestos" aria-hidden="true"></div>
+    <div class="ar-puntos" id="ar-puntos"></div>
+
+    <div class="ar-arriba">
+      <button type="button" class="ar-pastilla" data-ar="salir">✕ Salir</button>
+      <p class="ar-estado" id="ar-estado" role="status" hidden></p>
+      <button type="button" class="ar-circulo" data-ar="ayuda" aria-label="Ver el tutorial">?</button>
+    </div>
+
+    <!-- Tutorial de 3 pasos: aparece siempre al entrar, avanza solo cada 3 s o con un toque -->
+    <div class="ar-tutorial" id="ar-tutorial" hidden>
+      <button type="button" class="ar-tutorial-ocultar" data-ar="ocultar-tutorial">Ocultar tutorial</button>
+      <div class="ar-tutorial-tarjeta" role="group" aria-label="Tutorial">
+        <div class="ar-tutorial-paso">
+          <div class="ar-icono ar-icono-barrido" aria-hidden="true">📱</div>
+          <p>Mueve el celular despacio apuntando a la mesa</p>
+        </div>
+        <div class="ar-tutorial-paso" hidden>
+          <div class="ar-icono ar-icono-toque" aria-hidden="true">👆</div>
+          <p>Toca para colocar la maqueta</p>
+        </div>
+        <div class="ar-tutorial-paso" hidden>
+          <div class="ar-icono ar-icono-giro" aria-hidden="true">🤏</div>
+          <p>Gira con un dedo · Pellizca para cambiar el tamaño · Acércate para ver los detalles</p>
+        </div>
+        <div class="ar-tutorial-puntos" aria-hidden="true"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <!-- Aquí entran la tarjeta de información y el asistente mientras dura la AR -->
+    <div class="ar-compartidos" id="ar-compartidos"></div>
+
+    <div class="ar-abajo">
+      <div class="ar-tamanos" role="group" aria-label="Tamaño de la maqueta">
+        <button type="button" data-ar="maqueta" aria-pressed="true">Maqueta 1:25</button>
+        <button type="button" data-ar="real" aria-pressed="false">Escala real 1:1</button>
+      </div>
+      <div class="ar-barra">
+        <button type="button" class="ar-boton" data-ar="izquierda" aria-label="Girar a la izquierda 45 grados"><span aria-hidden="true">⟲</span><span class="ar-boton-texto">Girar</span></button>
+        <button type="button" class="ar-boton" data-ar="derecha" aria-label="Girar a la derecha 45 grados"><span aria-hidden="true">⟳</span><span class="ar-boton-texto">Girar</span></button>
+        <button type="button" class="ar-boton" data-ar="menos" aria-label="Achicar"><span aria-hidden="true">−</span><span class="ar-boton-texto">Menos</span></button>
+        <button type="button" class="ar-boton" data-ar="mas" aria-label="Agrandar"><span aria-hidden="true">+</span><span class="ar-boton-texto">Más</span></button>
+        <button type="button" class="ar-boton" data-ar="centrar" aria-label="Centrar la maqueta"><span aria-hidden="true">⊙</span><span class="ar-boton-texto">Centrar</span></button>
+        <button type="button" class="ar-boton ar-boton-ancho" id="ar-interior" data-ar="interior" aria-pressed="false"><span aria-hidden="true">🏠</span><span class="ar-boton-texto">Completa</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- iPhone: antes de abrir Quick Look se explican sus gestos (son los de Apple y no se pueden cambiar) -->
+  <div class="ayuda-ios" id="ayuda-ios" role="dialog" aria-modal="true" aria-labelledby="ayuda-ios-titulo" hidden>
+    <div class="ayuda-ios-tarjeta">
+      <h2 id="ayuda-ios-titulo">Así se usa en iPhone</h2>
+      <ul>
+        <li><span aria-hidden="true">👆</span> Arrastra con un dedo para mover la maqueta</li>
+        <li><span aria-hidden="true">🔄</span> Gira con dos dedos para rotarla</li>
+        <li><span aria-hidden="true">🤏</span> Pellizca para cambiar el tamaño (toca dos veces para volver al 100 %)</li>
+        <li><span aria-hidden="true">🚶</span> Acércate caminando para ver los detalles</li>
+        <li><span aria-hidden="true">🔀</span> Arriba puedes cambiar entre «AR» y «Objeto»</li>
+      </ul>
+      <p>Los puntos de información y el asistente se ven aquí, en la vista 3D, antes o después de la AR.</p>
+      <div class="ayuda-ios-botones">
+        <button type="button" class="boton-linea" id="ayuda-ios-cancelar">Cancelar</button>
+        <button type="button" class="boton-ar-grande" id="ayuda-ios-abrir" style="padding-right:26px">Abrir en mi espacio</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Reproductor propio a pantalla completa (iPhone y dispositivos sin WebXR). Usa el MISMO video. -->
   <div class="cine-completo" id="cine-completo" role="dialog" aria-modal="true" aria-label="Video a pantalla completa" hidden>

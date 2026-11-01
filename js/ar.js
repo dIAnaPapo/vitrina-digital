@@ -9,10 +9,17 @@
 //      («busca una superficie», «toca para colocar», etc.).
 //   5. Conecta el asistente «Pregúntale a la maqueta».
 //   6. Si el proyecto es un video ("tipo": "video"), carga la pantalla de cine (ar-video.js).
+//   7. Si es una maqueta: adelanto 3D limitado + «Ver en mi espacio» con la AR propia
+//      (ar-propia.js) y, como red de seguridad, la AR de model-viewer o Quick Look.
 // =========================================================
 
 import { cargarDatos, leerParametro } from './datos.js';
 import { responder } from './asistente.js';
+import { registrar } from './metricas.js';
+import { URL_PUBLICA } from './config.js';
+
+const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 const visor = document.getElementById('visor');
 const estado = document.getElementById('estado');
@@ -21,13 +28,15 @@ const asistente = document.getElementById('asistente');
 const botonAsistente = document.getElementById('abrir-asistente');
 
 let proyecto = null;
-let enAR = false;
+let datos = null;
+let enAR = false;          // true dentro de cualquier AR (la propia o la de model-viewer)
+let arPropia = null;       // la AR propia (three.js + WebXR), si este celular la soporta
 
 // ---------------------------------------------------------
 // 1. Datos del proyecto
 // ---------------------------------------------------------
 try {
-  const datos = await cargarDatos();
+  datos = await cargarDatos();
   proyecto = datos.proyectos.find(p => p.id === leerParametro('id'));
   if (!proyecto?.ar) throw new Error('Este proyecto no tiene experiencia AR');
 } catch (e) {
@@ -38,6 +47,7 @@ try {
 }
 
 const esVideo = proyecto.ar.tipo === 'video';
+const esMaqueta = !esVideo;
 
 document.title = `${proyecto.titulo} en AR · Vitrina Digital Ecotec`;
 document.getElementById('titulo').textContent = proyecto.titulo;
@@ -61,6 +71,23 @@ if (esVideo) {
 // Vista inicial del visor 3D (opcional): "ángulo horizontal, ángulo vertical, distancia"
 if (proyecto.ar.camara) visor.setAttribute('camera-orbit', proyecto.ar.camara);
 if (proyecto.ar.modeloIOS) visor.setAttribute('ios-src', proyecto.ar.modeloIOS);
+
+// Maqueta: la vista 3D es solo un ADELANTO (lo completo está en «Ver en mi espacio»):
+// gira sola despacio, giro horizontal limitado a ±40°, ángulo vertical fijo, sin zoom ni desplazamiento.
+if (esMaqueta) {
+  document.body.classList.add('modo-maqueta');
+  const [az, pol] = (proyecto.ar.camara ?? '25deg 62deg auto').split(' ').map(parseFloat);
+  visor.setAttribute('min-camera-orbit', `${az - 40}deg ${pol}deg auto`);
+  visor.setAttribute('max-camera-orbit', `${az + 40}deg ${pol}deg auto`);
+  visor.setAttribute('disable-zoom', '');
+  visor.setAttribute('disable-pan', '');
+  visor.setAttribute('auto-rotate', '');
+  visor.setAttribute('auto-rotate-delay', '0');
+  visor.setAttribute('rotation-per-second', '10deg');
+  visor.setAttribute('interaction-prompt', 'none');
+  // Mientras carga se ve una captura del modelo, no una pantalla vacía
+  if (proyecto.ar.poster) visor.setAttribute('poster', proyecto.ar.poster);
+}
 visor.src = proyecto.ar.modelo;
 
 visor.addEventListener('progress', (e) => {
@@ -69,7 +96,7 @@ visor.addEventListener('progress', (e) => {
 
 visor.addEventListener('load', () => {
   // canActivateAR = ¿este dispositivo puede abrir la AR?
-  if (!visor.canActivateAR) document.getElementById('aviso-sin-ar').hidden = false;
+  if (!visor.canActivateAR && esVideo) document.getElementById('aviso-sin-ar').hidden = false;
 });
 
 visor.addEventListener('error', () => {
@@ -92,9 +119,24 @@ proyecto.ar.puntos.forEach((punto, i) => {
   boton.dataset.id = punto.id;
   boton.setAttribute('aria-label', `Punto ${i + 1}: ${punto.titulo}`);
   boton.innerHTML = `${i + 1}<span class="punto-etiqueta" aria-hidden="true">${punto.titulo}</span>`;
-  boton.addEventListener('click', () => abrirPunto(punto.id));
+  boton.addEventListener('click', () => (adelantoLimitado() ? avisarAdelanto(punto) : abrirPunto(punto.id)));
   visor.appendChild(boton);
 });
+
+/**
+ * En el adelanto 3D de una maqueta, los puntos solo invitan a «Ver en mi espacio».
+ * Excepción: en iPhone la AR (Quick Look) no muestra puntos, así que ahí se leen en 3D.
+ */
+function adelantoLimitado() { return esMaqueta && !enAR && !esIOS; }
+
+function avisarAdelanto(punto) {
+  resaltar(punto.id);
+  document.getElementById('info-tipo').textContent = 'Adelanto';
+  document.getElementById('info-titulo').textContent = punto.titulo;
+  document.getElementById('info-texto').textContent = 'Disponible en «Ver en mi espacio»: entra para recorrer la maqueta y leer este punto.';
+  asistente.hidden = true;
+  tarjeta.hidden = false;
+}
 
 function abrirPunto(id, textoAlternativo, tipo = 'Punto de información') {
   const punto = proyecto.ar.puntos.find(p => p.id === id);
@@ -109,6 +151,7 @@ function abrirPunto(id, textoAlternativo, tipo = 'Punto de información') {
 
 function resaltar(id) {
   visor.querySelectorAll('.punto').forEach(b => b.classList.toggle('activo', b.dataset.id === id));
+  arPropia?.resaltar(id);
   // En modo 3D (no AR) la cámara gira hacia el punto para que se vea claro.
   const punto = proyecto.ar.puntos.find(p => p.id === id);
   if (punto && !enAR) {
@@ -119,8 +162,9 @@ function resaltar(id) {
 
 function cerrarTarjeta() {
   tarjeta.hidden = true;
-  botonAsistente.hidden = false;
+  botonAsistente.hidden = !proyecto.asistente || adelantoLimitado();
   visor.querySelectorAll('.punto').forEach(b => b.classList.remove('activo'));
+  arPropia?.resaltar(null);
   if (!enAR) visor.cameraTarget = 'auto auto auto';
   if ('speechSynthesis' in window) speechSynthesis.cancel();
 }
@@ -135,6 +179,7 @@ visor.addEventListener('ar-status', (e) => {
   switch (e.detail.status) {
     case 'session-started':          // se abrió la cámara (WebXR en Android)
       enAR = true;
+      if (proyecto.asistente) botonAsistente.hidden = false;
       visor.cameraTarget = 'auto auto auto';
       mostrarEstado('Buscando una superficie…', 0);
       break;
@@ -146,6 +191,7 @@ visor.addEventListener('ar-status', (e) => {
     case 'not-presenting':           // salió de la AR
       enAR = false;
       ocultarEstado();
+      botonAsistente.hidden = !proyecto.asistente || adelantoLimitado();
       break;
     case 'failed':
       enAR = false;
@@ -211,6 +257,8 @@ if (!datosAsistente) {
     input.value = '';
     input.blur();
   });
+  // En el adelanto de una maqueta el asistente aparece recién dentro de la AR
+  if (adelantoLimitado()) botonAsistente.hidden = true;
 }
 
 function preguntar(pregunta) {
@@ -243,4 +291,93 @@ if (esVideo) {
     console.error(e);
     mostrarEstado('No se pudo preparar el video. Revisa tu conexión e intenta de nuevo.', 0);
   });
+}
+
+// ---------------------------------------------------------
+// 7. Maqueta: «Ver en mi espacio»
+//    Android con WebXR → AR propia (three.js). Si no se puede o falla → AR de model-viewer.
+//    iPhone → explicación de gestos y Quick Look. Computadora → QR para el celular.
+//    Interruptor: "configuracion.arPropia" en el JSON, o ?ar=clasica en la dirección.
+// ---------------------------------------------------------
+if (esMaqueta) {
+  const modoPrueba = leerParametro('arprueba') === '1';
+  const forzarClasica = leerParametro('ar') === 'clasica' || datos.configuracion?.arPropia === false;
+  // Se revisa el soporte SIN descargar three.js (solo se descarga si se va a usar)
+  let soporta = false;
+  if (!forzarClasica && window.isSecureContext && navigator.xr?.isSessionSupported) {
+    try { soporta = await navigator.xr.isSessionSupported('immersive-ar'); } catch { soporta = false; }
+  }
+  if (modoPrueba || (soporta && !forzarClasica)) {
+    try {
+      const { crearARPropia } = await import('./ar-propia.js');
+      arPropia = crearARPropia({
+        proyecto, modoPrueba, registrar,
+        capa: document.getElementById('capa-ar'),
+        compartidos: [tarjeta, asistente, botonAsistente],
+        alTocarPunto: (id) => abrirPunto(id),
+        alEntrar: () => { enAR = true; cerrarTarjeta(); botonAsistente.hidden = !proyecto.asistente; },
+        alSalir: () => { enAR = false; cerrarTarjeta(); }
+      });
+      // Precarga: el modelo y la escena quedan listos mientras la persona mira el adelanto
+      const precargar = () => arPropia.precargar().catch(e => { console.warn('No se pudo precargar la AR propia', e); arPropia = null; });
+      visor.loaded ? precargar() : visor.addEventListener('load', precargar, { once: true });
+    } catch (e) {
+      console.warn('No se pudo cargar la AR propia; se usará la de model-viewer', e);
+      arPropia = null;
+    }
+  }
+
+  const entrar = document.getElementById('entrar-ar');
+  const mostrarEntrada = () => {
+    if (arPropia || visor.canActivateAR) {
+      entrar.hidden = false;
+    } else {
+      // Computadora (o celular sin AR): adelanto + QR para abrirla en el celular
+      document.getElementById('aviso-sin-ar').textContent = 'Estás viendo un adelanto en 3D. Para recorrer la maqueta en tu espacio, ábrela en tu celular.';
+      document.getElementById('aviso-sin-ar').hidden = false;
+      mostrarQR();
+    }
+  };
+  visor.loaded ? mostrarEntrada() : visor.addEventListener('load', mostrarEntrada, { once: true });
+
+  document.getElementById('ver-en-mi-espacio').addEventListener('click', async () => {
+    if (arPropia) {
+      cerrarTarjeta();
+      const ok = await arPropia.iniciar();
+      if (ok) return;
+      registrar('ar_fallida', { proyecto: proyecto.id, modo: 'propia' });
+      mostrarEstado('Abriendo la AR estándar…', 2500);
+    }
+    if (esIOS) { document.getElementById('ayuda-ios').hidden = false; document.getElementById('ayuda-ios-abrir').focus(); return; }
+    if (visor.canActivateAR) visor.activateAR();
+    else mostrarEstado('Este dispositivo no puede abrir la AR. Puedes seguir viendo la maqueta en 3D.', 5000);
+  });
+
+  // iPhone: explicación de los gestos de Quick Look antes de abrirlo
+  document.getElementById('ayuda-ios-abrir').addEventListener('click', () => {
+    document.getElementById('ayuda-ios').hidden = true;
+    registrar('ar_iniciada', { proyecto: proyecto.id, modo: 'quick-look' });
+    visor.activateAR();
+  });
+  document.getElementById('ayuda-ios-cancelar').addEventListener('click', () => { document.getElementById('ayuda-ios').hidden = true; });
+  document.getElementById('ayuda-ios').addEventListener('keydown', (e) => { if (e.key === 'Escape') document.getElementById('ayuda-ios').hidden = true; });
+
+  if (modoPrueba) window.vitrina.arPropia = arPropia;
+}
+
+/** QR (solo en computadora) con la dirección PÚBLICA de esta misma maqueta */
+async function mostrarQR() {
+  if (matchMedia('(max-width: 899px)').matches) return;
+  await new Promise((listo, error) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+    s.onload = listo; s.onerror = error;
+    document.head.append(s);
+  }).catch(() => null);
+  if (!window.qrcode) return;
+  const qr = window.qrcode(0, 'M');
+  qr.addData(`${URL_PUBLICA}ar.html?id=${encodeURIComponent(proyecto.id)}&src=qr`);
+  qr.make();
+  document.getElementById('ar-qr-codigo').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+  document.getElementById('ar-qr').hidden = false;
 }
