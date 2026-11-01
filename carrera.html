@@ -30,7 +30,7 @@
     </nav>
 
     <div class="hero-cuerpo" style="display:block">
-      <a class="volver" href="index.html#carreras">← Todas las carreras</a>
+      <a class="boton-volver" href="index.html#carreras"><span class="boton-volver-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span><span class="boton-volver-texto">Todas las carreras</span></a>
       <p class="ubicacion" id="contador">Carrera</p>
       <h1 class="display" id="titulo">…</h1>
       <p class="hero-descripcion" id="descripcion"></p>
@@ -43,7 +43,7 @@
 
     <!-- Para seguir explorando sin volver al inicio -->
     <div class="otras-carreras" id="otras" hidden>
-      <p>¿Quieres ver otra carrera?</p>
+      <p>Otras carreras</p>
       <div class="chips" id="otras-chips"></div>
     </div>
   </main>
@@ -103,7 +103,7 @@
       document.getElementById('otras').hidden = false;
     }
   } catch (e) {
-    mostrarError('No encontramos esa carrera.');
+    mostrarError('No se encontró la carrera solicitada.');
     console.error(e);
   }
 </script>

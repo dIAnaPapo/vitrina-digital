@@ -38,13 +38,23 @@
     </nav>
 
     <div class="hero-cuerpo">
-      <p class="display lema subrayado">Proyectos reales.<br>En tu espacio.</p>
+      <p class="display lema subrayado">Proyectos de<br>nuestros estudiantes</p>
 
-      <!-- Maqueta destacada girando: anticipa la AR desde el primer segundo -->
-      <model-viewer class="hero-modelo" id="hero-modelo"
-        auto-rotate rotation-per-second="18deg" interaction-prompt="none"
-        disable-zoom disable-pan shadow-intensity="1.2" exposure="1.1"
-        camera-orbit="30deg 70deg auto" alt="Maqueta 3D del proyecto destacado girando"></model-viewer>
+      <!-- Carrusel: el visor 3D va rotando entre los proyectos (js/carrusel.js).
+           Dos visores superpuestos: uno se ve y el otro precarga el siguiente. -->
+      <section class="carrusel" id="carrusel" aria-roledescription="carrusel" aria-label="Proyectos expuestos">
+        <div class="carrusel-visor">
+          <model-viewer class="carrusel-modelo" loading="eager" rotation-per-second="14deg" interaction-prompt="none"
+            disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
+          <model-viewer class="carrusel-modelo" loading="eager" rotation-per-second="14deg" interaction-prompt="none"
+            disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
+        </div>
+        <a class="carrusel-enlace" href="#carreras" aria-live="off">
+          <span><span class="carrusel-carrera"></span><strong class="carrusel-titulo">Cargando…</strong></span>
+          <span class="circulo" aria-hidden="true"></span>
+        </a>
+        <div class="carrusel-puntos"></div>
+      </section>
 
       <h1 class="display">Vitrina<br>digital<br>en Ecotec</h1>
     </div>
@@ -52,12 +62,15 @@
     <div class="hero-pie">
       <div class="datos-rapidos">
         <div class="dato dato-blanco">
-          <p><span id="icono-nfc"></span> Proyectos en<br>esta aula</p>
-          <strong id="total-proyectos">–</strong>
+          <p>Proyectos<br>expuestos</p>
+          <div>
+            <strong id="total-proyectos">–</strong>
+            <span class="dato-periodo" id="periodo-actual"></span>
+          </div>
         </div>
-        <a class="dato dato-azul" id="destacado-enlace" href="#carreras">
+        <a class="dato dato-azul" href="#carreras">
           <span class="fila"><p>Ver en AR</p><span id="flecha-azul"></span></span>
-          <p>Maquetas a escala sobre tu mesa, sin instalar apps.</p>
+          <p>Maquetas y videos en tu espacio, sin instalar apps.</p>
         </a>
       </div>
       <!-- Atajos a cada carrera (se rellenan desde el JSON) -->
@@ -85,15 +98,15 @@
         <h2 class="display" id="titulo-como" style="font-size:clamp(32px,8vw,48px)">Cómo<br><span class="suave">funciona</span></h2>
       </div>
       <ol class="pasos">
-        <li><h3>Acerca tu celular</h3><p>A la placa NFC o escanea el QR que está fuera del aula.</p></li>
-        <li><h3>Elige una carrera</h3><p>Arquitectura o Multimedia, y luego el proyecto que quieras ver.</p></li>
-        <li><h3>Lee la ficha</h3><p>Estudiante, materia, imágenes. También puedes escucharla.</p></li>
-        <li><h3>Míralo en AR</h3><p>El proyecto aparece sobre tu mesa: una maqueta a escala o una pantalla de cine.</p></li>
+        <li><h3>Escanea la placa</h3><p>Usa la cámara de tu celular para leer el código QR ubicado fuera del aula.</p></li>
+        <li><h3>Elige una carrera</h3><p>Arquitectura o Multimedia y Producción Audiovisual, y luego el proyecto.</p></li>
+        <li><h3>Revisa la ficha</h3><p>Estudiante, materia, descripción y créditos de cada proyecto.</p></li>
+        <li><h3>Míralo en tu espacio</h3><p>El proyecto aparece sobre la mesa: una maqueta a escala o una pantalla de cine.</p></li>
       </ol>
     </section>
 
     <div class="frase">
-      <p class="display">Tú escaneas.<br><span class="suave">El aula se exhibe.</span></p>
+      <p class="display">Conoce el talento<br><span class="suave">de nuestras carreras.</span></p>
       <a class="circulo" href="#carreras" aria-label="Volver a las carreras" id="frase-flecha" style="color:var(--tinta)"></a>
     </div>
   </main>
@@ -106,6 +119,7 @@
 
 <script type="module">
   import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos } from './js/datos.js';
+  import { crearCarrusel } from './js/carrusel.js';
 
   // Enlaces viejos con filtro (index.html?c=arquitectura) → página de la carrera
   if (leerParametro('c')) location.replace(`carrera.html${location.search}`);
@@ -119,18 +133,11 @@
     const carreras = carrerasOrdenadas(datos);
 
     document.getElementById('total-proyectos').textContent = String(datos.proyectos.length).padStart(2, '0');
+    // El periodo sale de un solo lugar: data/proyectos.json → "periodoActual"
+    document.getElementById('periodo-actual').textContent = datos.periodoActual ?? '';
 
-    // Proyecto destacado = el primero con AR
-    const destacado = datos.proyectos.find(p => p.ar);
-    if (destacado) {
-      const hero = document.getElementById('hero-modelo');
-      hero.alt = destacado.ar.alt;
-      // La maqueta pesa ~8 MB: se descarga DESPUÉS de que la página terminó de cargar,
-      // para que las carreras aparezcan rápido (H1). Si el celular está en «ahorro de datos», no se descarga.
-      const cargarHero = () => { if (!navigator.connection?.saveData) hero.src = destacado.ar.modelo; };
-      document.readyState === 'complete' ? cargarHero() : addEventListener('load', cargarHero, { once: true });
-      document.getElementById('destacado-enlace').href = `proyecto.html?id=${encodeURIComponent(destacado.id)}`;
-    }
+    // Carrusel del hero: todos los proyectos publicados que tienen 3D
+    window.vitrina = { carrusel: crearCarrusel(document.getElementById('carrusel'), datos.proyectos.filter(p => p.ar), datos.carreras) };
 
     const enlaceCarrera = (c) => `carrera.html?c=${encodeURIComponent(c.id)}`;
 
@@ -162,7 +169,7 @@
       </li>`;
     }).join('');
   } catch (e) {
-    mostrarError('No pudimos cargar la vitrina. Revisa tu conexión e intenta de nuevo.');
+    mostrarError('No se pudo cargar la vitrina. Verifica tu conexión e inténtalo nuevamente.');
     console.error(e);
   }
 </script>

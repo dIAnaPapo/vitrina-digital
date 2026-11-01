@@ -140,8 +140,8 @@ visor.addEventListener('ar-status', (e) => {
       break;
     case 'object-placed':            // la maqueta ya está sobre la mesa
       mostrarEstado(esVideo
-        ? '¡Listo! Toca ▶ para ver el video. Arrastra para mover la pantalla, pellizca para cambiar el tamaño.'
-        : '¡Listo! Camina alrededor y toca los puntos numerados. Arrastra para mover, pellizca para cambiar el tamaño.', 6000);
+        ? 'Pantalla colocada. Toca ▶ para reproducir el video. Arrastra para moverla y pellizca para cambiar su tamaño.'
+        : 'Maqueta colocada. Camina alrededor y toca los puntos numerados. Arrastra para moverla y pellizca para cambiar su tamaño.', 6000);
       break;
     case 'not-presenting':           // salió de la AR
       enAR = false;

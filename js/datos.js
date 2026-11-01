@@ -49,6 +49,4 @@ export const iconos = {
   arquitectura: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><path d="M3 21h18M5 21V8l7-5 7 5v13M9 21v-6h6v6"/></svg>`,
   multimedia: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>`,
   ar: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><path d="m12 3 8 4.5v9L12 21l-8-4.5v-9z"/><path d="m4 7.5 8 4.5 8-4.5M12 12v9"/></svg>`,
-  nfc: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a9 9 0 0 1 0 12M13 3.5a13 13 0 0 1 0 17"/></svg>`,
-  audio: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M19 6a8 8 0 0 1 0 12"/></svg>`
-};
+  nfc: `<svg viewBox="0 0 24 24" ${trazo} aria-hidden="true"><path d="M6 8.5a5 5 0 0 1 0 7M9.5 6a9 9 0 0 1 0 12M13 3.5a13 13 0 0 1 0 17"/></svg>`};

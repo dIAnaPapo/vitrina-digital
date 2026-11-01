@@ -25,7 +25,11 @@ Los visitantes **nunca** inician sesión.
 - Mismo lenguaje visual que la referencia: hero con degradado Ecotec, titulares grandes en mayúsculas (Inter Tight), tarjeta blanca + tarjeta translúcida de datos, chips, botones circulares con flecha y tarjetas de carrera y de proyecto con imagen. Sin fondos azul oscuro.
 - Colores Ecotec definidos en `css/estilos.css` (`--azul` #0662AE, `--azul-medio` #0489C9, `--celeste` #01B3E6, `--hielo` #DEF1FF y `--degradado`). Si cambias un color ahí, cambia en todo el sitio.
 - **Responsive:** se diseñó primero para celular (una columna). Desde 900 px de ancho (monitor) aparece el marco redondeado, el menú, la maqueta en el centro del hero y las dos tarjetas de carrera lado a lado.
-- En el inicio, la maqueta destacada gira sola: así la persona entiende desde el primer segundo que hay contenido 3D/AR.
+- **Carrusel del hero** (`js/carrusel.js`): el visor 3D grande (~60 % del alto en celular, 560 px en monitor) va rotando entre los proyectos cada 8 s con un fundido. Mientras se ve uno, el otro visor **precarga** el siguiente. Tiene nombre y carrera (que llevan a la ficha) y puntos para elegir. Se pausa con el mouse encima o al tocarlo (10 s). Con *reducir movimiento* no cambia ni gira solo.
+  - El proyecto de video aparece como el televisor 3D con el **póster** en la pantalla, no con el video: así la portada no descarga 9 MB. La imagen `img/cuentos-y-espias-pantalla.webp` está **volteada verticalmente** a propósito, porque así la pide la textura.
+  - Opcional por proyecto en el JSON: `ar.modeloHero` (versión liviana del modelo solo para el carrusel) y `ar.camaraHero` (encuadre).
+- **El periodo** («SEMESTRE 2 - 2026» en la tarjeta blanca) sale de un solo lugar: `data/proyectos.json` → `"periodoActual"`.
+- **Botón «volver»**: pastilla de 48 px con flecha y texto, arriba a la izquierda en todas las páginas. Carrera → «Todas las carreras». Ficha → «Proyectos de Arquitectura/Multimedia» (usa `nombreCorto` de la carrera para que entre en una línea). AR → «Volver al proyecto».
 
 ### Modelo de negocio (B2B) y por qué implementarlo
 El cliente es la universidad. El modelo tiene dos etapas:
@@ -109,7 +113,7 @@ y se usa como una etiqueta HTML:
 vitrina-digital/
 ├── index.html          ← lo que abre la placa: hero + «Elige una carrera» (2 tarjetas)
 ├── carrera.html        ← proyectos de una carrera (?c=arquitectura / ?c=multimedia)
-├── proyecto.html       ← información del proyecto + «Ver en AR» + «Escuchar ficha»
+├── proyecto.html       ← información del proyecto + «Ver en AR»
 ├── ar.html             ← la experiencia AR (model-viewer)
 ├── placa.html          ← diseño imprimible de la placa (NFC + QR automático)
 ├── data/
@@ -127,6 +131,8 @@ vitrina-digital/
 │   └── ar.css          ← estilos de la página AR
 └── js/
     ├── datos.js        ← lee el JSON (compartido)
+    ├── config.js       ← URL_PUBLICA (GitHub Pages) y URL de la placa
+    ├── carrusel.js     ← carrusel de proyectos del hero
     ├── ar.js           ← lógica de la AR: modelo, puntos, guía, asistente
     ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa
     ├── karaoke.js      ← letra palabra por palabra sincronizada con el video
@@ -199,6 +205,10 @@ En el inicio, la maqueta se descarga **después** de que la página terminó de 
 - **Descargas para imprenta:** botones «Descargar QR (PNG)», de unos 2.000 px, y «Descargar QR (SVG)», vectorial. Los dos traen el margen blanco reglamentario de 4 módulos y corrección de errores media (M).
 - **Imprimir la placa:** botón «Imprimir placa» o Ctrl+P (10 × 15 cm). La zona punteada «Acerca tu celular» queda para el chip.
 - **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
+
+### Pruebas automáticas (carpeta `pruebas/`)
+- `npm test` corre `qr.test.mjs` (el QR, ver abajo) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
+- `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR
 `pruebas/qr.test.mjs` abre `placa.html` en Chrome y **decodifica** con jsQR el QR de la pantalla, el PNG y el SVG descargados. Comprueba que los tres apuntan exactamente a `https://dianapapo.github.io/vitrina-digital/index.html?src=qr`, que esa URL abre el inicio y que no hay errores en la consola.

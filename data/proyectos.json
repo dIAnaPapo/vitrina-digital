@@ -1,9 +1,11 @@
 {
   "_instrucciones": "ESTE ES EL ÚNICO ARCHIVO QUE EL DOCENTE EDITA CADA SEMESTRE. Cambia textos, imágenes y modelos aquí; no hace falta tocar el código. Los textos marcados como [EJEMPLO] deben reemplazarse con la ficha real del estudiante.",
+  "periodoActual": "Semestre 2 - 2026",
   "carreras": [
     {
       "id": "arquitectura",
       "nombre": "Arquitectura",
+      "nombreCorto": "Arquitectura",
       "descripcion": "Maquetas, planos y proyectos urbanos de nuestros estudiantes.",
       "icono": "arquitectura",
       "orden": 1
@@ -11,6 +13,7 @@
     {
       "id": "multimedia",
       "nombre": "Multimedia y Producción Audiovisual",
+      "nombreCorto": "Multimedia",
       "descripcion": "Cortometrajes, animación, fotografía y diseño interactivo.",
       "icono": "multimedia",
       "orden": 2
@@ -250,6 +253,7 @@
       "ar": {
         "tipo": "video",
         "modelo": "modelos/pantalla-cine.glb",
+        "pantallaHero": "img/cuentos-y-espias-pantalla.webp",
         "modeloIOS": "",
         "escala": "60 cm de ancho",
         "alt": "Televisor retro azul con una pantalla de cine 16:9 que reproduce el video Cuentos y Espías",

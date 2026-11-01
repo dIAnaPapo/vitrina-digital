@@ -30,6 +30,7 @@
 /* «hidden» siempre oculta, aunque la clase del elemento le dé otro display */
 [hidden] { display: none !important; }
 html, body { margin: 0; }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 body {
   font-family: var(--texto);
   background: var(--hielo);
@@ -124,15 +125,39 @@ a.chip-claro:hover { background: var(--hielo); }
 .hero h1 { font-size: clamp(40px, 11vw, 72px); }
 .hero .lema { font-size: clamp(22px, 6vw, 30px); font-weight: 500; }
 
-.hero-modelo { height: 300px; width: 100%; --poster-color: transparent; background: transparent; }
 .hero-pie { position: relative; display: grid; gap: 16px; padding: 0 20px; }
 
+/* ---------- Carrusel del hero (js/carrusel.js) ----------
+   Celular: ~60 % del alto de la pantalla y todo el ancho. Monitor: 560 px de alto. */
+.carrusel { display: grid; gap: 8px; }
+.carrusel-visor { position: relative; height: 60svh; min-height: 320px; max-height: 620px; margin: 0 -20px; }
+.carrusel-modelo {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  opacity: 0; transition: opacity .6s ease; pointer-events: none;
+  --poster-color: transparent; background: transparent;
+}
+.carrusel-modelo.activo { opacity: 1; }
+.carrusel-enlace {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 52px; color: var(--blanco); text-decoration: none;
+}
+.carrusel-carrera { display: block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; opacity: .9; }
+.carrusel-titulo { display: block; font: 600 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: -.02em; margin-top: 2px; }
+.carrusel-puntos { display: flex; justify-content: center; gap: 2px; }
+.carrusel-puntos button { width: 44px; height: 44px; padding: 0; border: 0; background: transparent; cursor: pointer; display: grid; place-items: center; }
+.carrusel-puntos button::before {
+  content: ""; width: 10px; height: 10px; border-radius: 999px;
+  background: rgba(255, 255, 255, .5); transition: width .3s, background .3s;
+}
+.carrusel-puntos button[aria-current="true"]::before { width: 30px; background: var(--blanco); }
+
 @media (min-width: 900px) {
-  .hero { min-height: 600px; padding-bottom: 36px; }
-  .hero-cuerpo { grid-template-columns: 1fr 1.2fr 1fr; align-items: start; padding: 64px 36px 0; }
-  .hero .lema { grid-column: 1; }
-  .hero-modelo { grid-column: 2; grid-row: 1 / span 2; height: 380px; }
-  .hero h1 { grid-column: 3; grid-row: 1; text-align: right; }
+  .hero { padding-bottom: 36px; }
+  .hero-cuerpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; padding: 48px 36px 0; }
+  .hero .lema { grid-column: 1; grid-row: 1; }
+  .carrusel { grid-column: 2; grid-row: 1 / span 2; }
+  .carrusel-visor { height: 560px; margin: 0; }
+  .hero h1 { grid-column: 3; grid-row: 1; text-align: right; font-size: clamp(44px, 4.6vw, 62px); }
   .hero-pie { grid-template-columns: auto 1fr; align-items: end; padding: 0 36px; }
   .hero-pie .chips { justify-content: flex-end; }
 }
@@ -148,6 +173,7 @@ a.chip-claro:hover { background: var(--hielo); }
 .dato-blanco { background: var(--blanco); color: var(--tinta); }
 .dato-azul { background: rgba(255, 255, 255, .14); border: 1.5px solid rgba(255, 255, 255, .45); color: var(--blanco); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .dato-azul .fila { display: flex; justify-content: space-between; align-items: start; }
+.dato-periodo { display: block; margin-top: 6px; font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #4F5D73; }
 @media (min-width: 900px) { .datos-rapidos { grid-template-columns: 170px 170px; } }
 
 /* ---------- Sección clara ---------- */
@@ -164,7 +190,7 @@ a.chip-claro:hover { background: var(--hielo); }
   .seccion-cabeza { grid-template-columns: 180px 1fr auto; align-items: start; }
 }
 
-.etiqueta-lateral { font-family: var(--display); font-size: 22px; text-transform: uppercase; letter-spacing: -.02em; line-height: 1.15; color: var(--azul-vivo); text-decoration: underline; text-underline-offset: 4px; margin: 0; }
+.etiqueta-lateral { font-family: var(--display); font-size: 22px; text-transform: uppercase; letter-spacing: -.02em; line-height: 1.15; color: var(--azul-vivo); margin: 0; }
 
 /* ---------- Tarjetas de proyecto (oscuras con imagen) ---------- */
 .proyectos { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
@@ -247,7 +273,22 @@ a.chip-claro:hover { background: var(--hielo); }
 /* ---------- Ficha del proyecto ---------- */
 .ficha-hero h1 { font-size: clamp(40px, 11vw, 80px); }
 .ficha-hero .ubicacion { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .8; margin: 0 0 12px; }
-.volver { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: none; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+/* ---------- Botón «volver»: pastilla grande con flecha y texto, igual en todas las páginas ---------- */
+.boton-volver {
+  display: inline-flex; align-items: center; gap: 10px; min-height: 48px; max-width: 100%;
+  padding: 4px 18px 4px 4px; border-radius: 999px; text-decoration: none;
+  background: rgba(255, 255, 255, .16); border: 1.5px solid rgba(255, 255, 255, .7); color: var(--blanco);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+  font: 600 13px/1.2 var(--texto); letter-spacing: .06em; text-transform: uppercase;
+  transition: background .2s;
+}
+.boton-volver:hover { background: rgba(255, 255, 255, .28); }
+.hero-cuerpo .boton-volver { margin-bottom: 22px; }
+.boton-volver-icono {
+  width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%;
+  display: grid; place-items: center; background: var(--blanco); color: var(--azul);
+}
+.boton-volver-icono svg { width: 18px; height: 18px; }
 
 .boton-ar-grande {
   display: inline-flex; align-items: center; justify-content: space-between; gap: 18px;

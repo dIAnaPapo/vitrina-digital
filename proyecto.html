@@ -29,7 +29,7 @@
     </nav>
 
     <div class="hero-cuerpo" style="display:block">
-      <a class="volver" id="volver" href="index.html#carreras">← Todas las carreras</a>
+      <a class="boton-volver" id="volver" href="index.html#carreras"><span class="boton-volver-icono" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></span><span class="boton-volver-texto">Todas las carreras</span></a>
       <p class="ubicacion" id="ubicacion"></p>
       <h1 class="display" id="titulo">…</h1>
       <div class="acciones" id="acciones" style="margin-top:28px"></div>
@@ -59,17 +59,16 @@
     document.title = `${p.titulo} · Vitrina Digital Ecotec`;
     document.getElementById('titulo').textContent = p.titulo;
     document.getElementById('ubicacion').textContent = `${carrera?.nombre ?? ''} · ${p.ubicacion}`;
-    // «Volver» lleva a los proyectos de la misma carrera
+    // «Volver» lleva a los proyectos de la misma carrera (con el nombre corto, para que entre en una línea)
     const volver = document.getElementById('volver');
     volver.href = `carrera.html?c=${encodeURIComponent(p.carrera)}`;
-    if (carrera) volver.textContent = `← ${carrera.nombre}`;
+    if (carrera) volver.querySelector('.boton-volver-texto').textContent = `Proyectos de ${carrera.nombreCorto ?? carrera.nombre}`;
     document.getElementById('fondo').src = p.imagenes[0]?.src ?? '';
 
-    // ---- Botones: Ver en AR (si tiene) + Escuchar ficha ----
-    document.getElementById('acciones').innerHTML = `
-      ${p.ar ? `<a class="boton-ar-grande" href="ar.html?id=${encodeURIComponent(p.id)}">
-                  Ver en AR <span class="circulo">${iconos.ar}</span></a>` : ''}
-      <button class="boton-linea" id="escuchar" type="button">${iconos.audio.replace('<svg', '<svg width="18" height="18"')} <span>Escuchar ficha</span></button>`;
+    // ---- Botón principal: Ver en AR (si el proyecto tiene) ----
+    document.getElementById('acciones').innerHTML = p.ar
+      ? `<a class="boton-ar-grande" href="ar.html?id=${encodeURIComponent(p.id)}">Ver en AR <span class="circulo">${iconos.ar}</span></a>`
+      : '';
 
     // ---- Ficha ----
     const imagenes = p.imagenes.map(img => `<img src="${escapar(img.src)}" alt="${escapar(img.alt)}" loading="lazy">`).join('');
@@ -114,21 +113,8 @@
       <div class="galeria">${video}${imagenes}</div>
       ${creditos}${creditoModelo}${letra}`;
 
-    // ---- Lectura en voz alta (viene en el navegador) ----
-    const boton = document.getElementById('escuchar');
-    const etiqueta = boton.querySelector('span');
-    if (!('speechSynthesis' in window)) boton.hidden = true;
-    boton.addEventListener('click', () => {
-      if (speechSynthesis.speaking) { speechSynthesis.cancel(); etiqueta.textContent = 'Escuchar ficha'; return; }
-      const texto = `${p.titulo}. ${p.descripcion}. Estudiante: ${p.estudiante}. Materia: ${p.materia}.`.replaceAll('[EJEMPLO]', '');
-      const voz = new SpeechSynthesisUtterance(texto);
-      voz.lang = 'es-ES';
-      voz.onend = () => { etiqueta.textContent = 'Escuchar ficha'; };
-      speechSynthesis.speak(voz);
-      etiqueta.textContent = 'Detener';
-    });
   } catch (e) {
-    mostrarError('No encontramos ese proyecto.');
+    mostrarError('No se encontró el proyecto solicitado.');
     console.error(e);
   }
 </script>
