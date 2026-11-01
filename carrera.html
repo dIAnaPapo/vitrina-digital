@@ -55,7 +55,7 @@
 </div>
 
 <script type="module">
-  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos } from './js/datos.js';
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos, portadaDe } from './js/datos.js';
   document.getElementById('logo-icono').innerHTML = iconos.ar;
 
   try {
@@ -69,7 +69,7 @@
     document.getElementById('descripcion').textContent = carrera.descripcion;
     document.getElementById('contador').textContent = `Carrera · ${textoProyectos(proyectos.length)}`;
 
-    const fondo = proyectos.find(p => p.imagenes?.[0])?.imagenes[0].src;
+    const fondo = proyectos.map(portadaDe).find(Boolean);
     if (fondo) {
       const img = document.getElementById('fondo');
       img.src = fondo;
@@ -80,7 +80,7 @@
     document.getElementById('lista-proyectos').innerHTML = proyectos.map(p => `
       <li>
         <a class="proyecto" href="proyecto.html?id=${encodeURIComponent(p.id)}">
-          <img src="${escapar(p.imagenes[0]?.src)}" alt="" loading="lazy">
+          <img src="${escapar(portadaDe(p))}" alt="" loading="lazy">
           <div class="proyecto-cabeza">
             <span class="icono">${iconos[carrera.icono] ?? iconos.ar}</span>
             <h3>${escapar(p.titulo)}</h3>

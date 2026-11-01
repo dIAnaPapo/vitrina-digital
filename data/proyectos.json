@@ -234,20 +234,8 @@
       "materia": "Efectos Audiovisuales",
       "periodo": "APE1 · 2026-2",
       "descripcion": "Video de motion graphics con tipografía animada para la canción «Bienvenidos a Cuentos y Espías». La letra la escribió la estudiante Diana Espinoza y la música se generó con Suno AI para un concurso de webtoon; después la estudiante la convirtió en su proyecto universitario. Un televisor retro, rayas de colores, siluetas de ciudad y personajes animados acompañan cada verso. Duración: 1 min 07 s.",
-      "imagenes": [
-        {
-          "src": "img/cuentos-y-espias-45s.jpg",
-          "alt": "Televisor retro sobre fondo de rayas de colores con el título Cuentos y Espías en letras amarillas"
-        },
-        {
-          "src": "img/cuentos-y-espias-3s.jpg",
-          "alt": "Televisor retro con el crédito Letra creada por Diana Espinoza"
-        },
-        {
-          "src": "img/cuentos-y-espias-30s.jpg",
-          "alt": "Siluetas de personas frente a una ciudad nocturna con las palabras Un gran equipo"
-        }
-      ],
+      "portada": "img/cuentos-y-espias-45s.jpg",
+      "imagenes": [],
       "video": "videos/cuentos-y-espias.mp4",
       "poster": "img/cuentos-y-espias-45s.jpg",
       "ar": {
@@ -256,6 +244,8 @@
         "pantallaHero": "img/cuentos-y-espias-pantalla.webp",
         "modeloIOS": "",
         "escala": "60 cm de ancho",
+        "modos": ["televisor", "sin-televisor", "360"],
+        "modoInicial": "televisor",
         "alt": "Televisor retro azul con una pantalla de cine 16:9 que reproduce el video Cuentos y Espías",
         "puntos": []
       },

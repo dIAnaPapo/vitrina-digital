@@ -10,6 +10,14 @@
 // (KHR_materials_unlit) para que el video se vea con sus colores reales.
 // ar.js le pone el video encima con createVideoTexture().
 //
+// Modo «Sin televisor» (Ronda 2): en el MISMO archivo hay además
+//   - "pantalla-libre": la pantalla sola, con bordes redondeados (mismo video),
+//   - "halo": un brillo suave alrededor (borde difuminado con color por vértice),
+//   - "luz-mesa": un reflejo de luz sobre la mesa, debajo de la pantalla.
+// Cada parte se muestra u oculta cambiando la transparencia (alfa) de su material:
+// las del televisor y la pantalla libre usan alphaMode MASK (alfa 0 = no se dibuja);
+// halo y luz-mesa usan BLEND. Así el video nunca se recrea ni se reinicia.
+//
 // Cómo volver a generarlo: abre herramientas/generar-pantalla.html
 // con Live Server y toca «Descargar pantalla-cine.glb».
 // =========================================================
@@ -57,6 +65,66 @@ function rectangulo(ancho, alto) {
   };
 }
 
+/** Contorno de un rectángulo con esquinas redondeadas (sentido antihorario), centrado en el origen. */
+function contornoRedondeado(ancho, alto, radio, pasos = 8) {
+  const [x, y] = [ancho / 2 - radio, alto / 2 - radio];
+  const centros = [[x, y], [-x, y], [-x, -y], [x, -y]];   // esquinas: arriba-der, arriba-izq, abajo-izq, abajo-der
+  const puntos = [];
+  centros.forEach(([cx, cy], esquina) => {
+    for (let i = 0; i <= pasos; i++) {
+      const a = (esquina * 90 + (i / pasos) * 90) * Math.PI / 180;
+      puntos.push([cx + radio * Math.cos(a), cy + radio * Math.sin(a)]);
+    }
+  });
+  return puntos;
+}
+
+/** Pantalla con bordes redondeados mirando a +Z. UV con v=1 arriba (como la del televisor). */
+function rectanguloRedondeado(ancho, alto, radio) {
+  const contorno = contornoRedondeado(ancho, alto, radio);
+  const posiciones = [0, 0, 0], normales = [0, 0, 1], uvs = [0.5, 0.5], indices = [];
+  contorno.forEach(([px, py], i) => {
+    posiciones.push(px, py, 0);
+    normales.push(0, 0, 1);
+    uvs.push(px / ancho + 0.5, py / alto + 0.5);
+    indices.push(0, i + 1, ((i + 1) % contorno.length) + 1);
+  });
+  return { posiciones, normales, uvs, indices };
+}
+
+/** Anillo con esquinas redondeadas: por dentro alfa «a», por fuera alfa 0 → brillo difuminado. */
+function halo(ancho, alto, radio, grosor, a) {
+  const dentro = contornoRedondeado(ancho, alto, radio);
+  const fuera = contornoRedondeado(ancho + grosor * 2, alto + grosor * 2, radio + grosor);
+  const n = dentro.length;
+  const posiciones = [], normales = [], uvs = [], colores = [], indices = [];
+  [...dentro, ...fuera].forEach(([px, py], i) => {
+    posiciones.push(px, py, 0);
+    normales.push(0, 0, 1);
+    uvs.push(0, 0);
+    colores.push(1, 1, 1, i < n ? a : 0);
+  });
+  for (let i = 0; i < n; i++) {
+    const j = (i + 1) % n;
+    indices.push(i, n + i, n + j, i, n + j, j);
+  }
+  return { posiciones, normales, uvs, indices, colores };
+}
+
+/** Óvalo plano sobre la mesa (plano XZ): centro con alfa «a», borde con alfa 0. */
+function luzEnLaMesa(radioX, radioZ, a, pasos = 48) {
+  const posiciones = [0, 0, 0], normales = [0, 1, 0], uvs = [0, 0], colores = [1, 1, 1, a], indices = [];
+  for (let i = 0; i < pasos; i++) {
+    const ang = (i / pasos) * Math.PI * 2;
+    posiciones.push(radioX * Math.cos(ang), 0, -radioZ * Math.sin(ang));
+    normales.push(0, 1, 0);
+    uvs.push(0, 0);
+    colores.push(1, 1, 1, 0);
+    indices.push(0, i + 1, ((i + 1) % pasos) + 1);
+  }
+  return { posiciones, normales, uvs, indices, colores };
+}
+
 /** Rotación sobre el eje Z (en grados) como cuaternión [x, y, z, w]. */
 function giroZ(grados) {
   const r = grados * Math.PI / 180 / 2;
@@ -64,13 +132,19 @@ function giroZ(grados) {
 }
 
 export function crearPantallaGLB() {
+  // MASK: con alfa 1 se ve normal; con alfa 0 no se dibuja (así se «quita» el televisor)
+  const mascara = { alphaMode: 'MASK', alphaCutoff: 0.5 };
+  const sinLuz = { KHR_materials_unlit: {} };
   const materiales = [
-    { name: 'mueble', pbrMetallicRoughness: { baseColorFactor: color('#0662AE'), metallicFactor: 0, roughnessFactor: 0.45 } },
-    { name: 'marco', pbrMetallicRoughness: { baseColorFactor: color('#111418'), metallicFactor: 0, roughnessFactor: 0.3 } },
-    { name: 'pie', pbrMetallicRoughness: { baseColorFactor: color('#01B3E6'), metallicFactor: 0, roughnessFactor: 0.5 } },
-    { name: 'antena', pbrMetallicRoughness: { baseColorFactor: color('#DEF1FF'), metallicFactor: 0.4, roughnessFactor: 0.35 } },
-    { name: 'pantalla', pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1 },
-      extensions: { KHR_materials_unlit: {} } }
+    { name: 'mueble', ...mascara, pbrMetallicRoughness: { baseColorFactor: color('#0662AE'), metallicFactor: 0, roughnessFactor: 0.45 } },
+    { name: 'marco', ...mascara, pbrMetallicRoughness: { baseColorFactor: color('#111418'), metallicFactor: 0, roughnessFactor: 0.3 } },
+    { name: 'pie', ...mascara, pbrMetallicRoughness: { baseColorFactor: color('#01B3E6'), metallicFactor: 0, roughnessFactor: 0.5 } },
+    { name: 'antena', ...mascara, pbrMetallicRoughness: { baseColorFactor: color('#DEF1FF'), metallicFactor: 0.4, roughnessFactor: 0.35 } },
+    { name: 'pantalla', ...mascara, pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 1], metallicFactor: 0, roughnessFactor: 1 }, extensions: sinLuz },
+    // Modo «Sin televisor»: empiezan ocultas (alfa 0)
+    { name: 'pantalla-libre', ...mascara, pbrMetallicRoughness: { baseColorFactor: [1, 1, 1, 0], metallicFactor: 0, roughnessFactor: 1 }, extensions: sinLuz },
+    { name: 'halo', alphaMode: 'BLEND', pbrMetallicRoughness: { baseColorFactor: color('#01B3E6', 0), metallicFactor: 0, roughnessFactor: 1 }, extensions: sinLuz },
+    { name: 'luz-mesa', alphaMode: 'BLEND', pbrMetallicRoughness: { baseColorFactor: color('#01B3E6', 0), metallicFactor: 0, roughnessFactor: 1 }, extensions: sinLuz }
   ];
 
   // Alturas (m), de abajo hacia arriba
@@ -89,7 +163,11 @@ export function crearPantallaGLB() {
     { nombre: 'antena-izq', material: 3, geo: caja(0.008, largoAntena, 0.008),
       t: [-0.03 - s * largoAntena / 2, techo + c * largoAntena / 2, 0], r: giroZ(inclinacion) },
     { nombre: 'antena-der', material: 3, geo: caja(0.008, largoAntena, 0.008),
-      t: [0.03 + s * largoAntena / 2, techo + c * largoAntena / 2, 0], r: giroZ(-inclinacion) }
+      t: [0.03 + s * largoAntena / 2, techo + c * largoAntena / 2, 0], r: giroZ(-inclinacion) },
+    // ---- Modo «Sin televisor»: la pantalla flota en el mismo lugar ----
+    { nombre: 'halo', material: 6, geo: halo(ANCHO_PANTALLA, ALTO_PANTALLA, 0.02, 0.045, 0.6), t: [0, yMueble, fondoMueble / 2 + 0.0055] },
+    { nombre: 'pantalla-libre', material: 5, geo: rectanguloRedondeado(ANCHO_PANTALLA, ALTO_PANTALLA, 0.02), t: [0, yMueble, fondoMueble / 2 + 0.0065] },
+    { nombre: 'luz-mesa', material: 7, geo: luzEnLaMesa(0.4, 0.14, 0.45), t: [0, 0.002, 0.03] }
   ];
 
   // ---- Empaquetar en un solo búfer binario ----
@@ -102,7 +180,7 @@ export function crearPantallaGLB() {
     bufferViews.push({ buffer: 0, byteOffset: largo, byteLength: datos.byteLength, target });
     trozos.push(new Uint8Array(datos.buffer));
     largo += datos.byteLength;
-    const n = { SCALAR: 1, VEC2: 2, VEC3: 3 }[tipo];
+    const n = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 }[tipo];
     const acc = { bufferView: bufferViews.length - 1, componentType: componente, count: arreglo.length / n, type: tipo };
     if (conLimites) {
       acc.min = [0, 1, 2].map(i => Math.min(...arreglo.filter((_, j) => j % 3 === i)));
@@ -119,6 +197,7 @@ export function crearPantallaGLB() {
       NORMAL: agregar(p.geo.normales, 'VEC3', 5126, 34962),
       TEXCOORD_0: agregar(p.geo.uvs, 'VEC2', 5126, 34962)
     };
+    if (p.geo.colores) attributes.COLOR_0 = agregar(p.geo.colores, 'VEC4', 5126, 34962);
     const indices = agregar(p.geo.indices, 'SCALAR', 5123, 34963);
     meshes.push({ name: p.nombre, primitives: [{ attributes, indices, material: p.material }] });
     const nodo = { name: p.nombre, mesh: meshes.length - 1, translation: p.t };

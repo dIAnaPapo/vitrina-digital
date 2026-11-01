@@ -19,6 +19,11 @@ export function carrerasOrdenadas(datos) {
   return [...datos.carreras].sort((a, b) => (a.orden ?? 99) - (b.orden ?? 99));
 }
 
+/** Imagen de portada de un proyecto: "portada" del JSON, o la primera imagen de su galería. */
+export function portadaDe(p) {
+  return p.portada ?? p.imagenes?.[0]?.src ?? '';
+}
+
 /** «1 proyecto» / «2 proyectos» */
 export function textoProyectos(n) {
   return `${n} proyecto${n === 1 ? '' : 's'}`;

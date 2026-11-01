@@ -118,7 +118,7 @@
 </div>
 
 <script type="module">
-  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos } from './js/datos.js';
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, carrerasOrdenadas, textoProyectos, portadaDe } from './js/datos.js';
   import { crearCarrusel } from './js/carrusel.js';
 
   // Enlaces viejos con filtro (index.html?c=arquitectura) → página de la carrera
@@ -149,7 +149,7 @@
     // De fondo usa la primera imagen de un proyecto de esa carrera (si hay).
     document.getElementById('lista-carreras').innerHTML = carreras.map(c => {
       const suyos = datos.proyectos.filter(p => p.carrera === c.id);
-      const fondo = suyos.find(p => p.imagenes?.[0])?.imagenes[0].src;
+      const fondo = suyos.map(portadaDe).find(Boolean);
       return `
       <li>
         <a class="carrera" href="${enlaceCarrera(c)}">

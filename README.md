@@ -105,7 +105,24 @@ y se usa como una etiqueta HTML:
 
 > En iPhone no hay hoy una alternativa mejor sin instalar apps: Safari no tiene WebXR para AR, y Quick Look (USDZ) no admite texturas de video. Las plataformas de WebAR de pago (por ejemplo 8th Wall) podrían hacerlo, pero cuestan dinero y dependen de un servicio externo.
 
-**El modelo de la pantalla** se genera por código: abre `herramientas/generar-pantalla.html` con Live Server y toca «Descargar». El código está en `herramientas/pantalla-glb.js`.
+#### Tres modos de visualización (selector 📺 Televisor · 🎬 Sin televisor · 🌐 360°)
+En los tres siguen la letra palabra por palabra, «Ocultar letra» y los controles. **El video nunca se reinicia**, porque siempre es el mismo `<video>`.
+
+| Modo | Qué es | Cómo funciona |
+|---|---|---|
+| 📺 **Televisor** | El televisor retro con el video | Igual que antes |
+| 🎬 **Sin televisor** | Solo la pantalla 16:9 con bordes redondeados, flotando, con un halo celeste y un reflejo de luz en la mesa | El `.glb` trae las dos versiones y solo se cambia la transparencia de los materiales. Se agranda y achica con los dedos igual que el televisor |
+| 🌐 **360°** | «Cine curvo»: una pantalla curva gigante de 120° con el video **sin deformar**, un domo con los rayos de colores del video, siluetas de ciudad con ventanas y confeti | `js/cine-360.js` con three.js (se descarga solo al abrirlo). Se mira girando el celular (giroscopio; en iPhone pide permiso con un toque) o arrastrando con el dedo o el mouse. Funciona en Android, iPhone y computadora |
+
+- Si se elige 360° **dentro de la AR** de Android, primero se cierra la AR y luego se abre el cine curvo; el audio sigue. model-viewer no permite poner una escena envolvente alrededor de la persona dentro de su AR.
+- Botón «✕ Salir del 360°»: vuelve al modo anterior.
+- En el JSON: `ar.modos` (qué modos se ofrecen) y `ar.modoInicial` (`televisor` o `sin-televisor`). El admin podrá editarlos en la Fase 5.
+- Cada cambio se registra como el evento `modo_video` (para las métricas de la Fase 6).
+
+**El modelo de la pantalla** se genera por código: `herramientas/pantalla-glb.js`. Con Node: `node --input-type=module -e "import('./herramientas/pantalla-glb.js').then(m => require('fs').writeFileSync('modelos/pantalla-cine.glb', m.crearPantallaGLB()))"`, o abre `herramientas/generar-pantalla.html` con Live Server y toca «Descargar».
+
+#### Ficha de Multimedia
+Solo tiene el video (con subtítulos), los créditos y «Ver la letra completa». El póster (`"portada"` en el JSON) se usa como portada: tarjeta de la carrera, fondo de la ficha y póster del video.
 
 ## 4. Estructura de archivos
 
@@ -134,7 +151,8 @@ vitrina-digital/
     ├── config.js       ← URL_PUBLICA (GitHub Pages) y URL de la placa
     ├── carrusel.js     ← carrusel de proyectos del hero
     ├── ar.js           ← lógica de la AR: modelo, puntos, guía, asistente
-    ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa
+    ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa y modos
+    ├── cine-360.js     ← modo 360° «cine curvo» (three.js, giroscopio)
     ├── karaoke.js      ← letra palabra por palabra sincronizada con el video
     ├── metricas.js     ← registro anónimo de eventos (se conecta a Supabase en la Fase 6)
     └── asistente.js    ← «Pregúntale a la maqueta»
@@ -207,7 +225,7 @@ En el inicio, la maqueta se descarga **después** de que la página terminó de 
 - **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
 
 ### Pruebas automáticas (carpeta `pruebas/`)
-- `npm test` corre `qr.test.mjs` (el QR, ver abajo) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
+- `npm test` corre `qr.test.mjs` (el QR, ver abajo), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR

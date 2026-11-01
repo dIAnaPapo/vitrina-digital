@@ -112,6 +112,13 @@
       <span class="circulo" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></span>
     </button>
 
+    <!-- Modos de visualización del video (js/ar-video.js). Se ven también dentro de la AR. -->
+    <div class="cine-modos" id="cine-modos" role="group" aria-label="Modo de visualización" hidden>
+      <button type="button" data-modo="televisor" aria-pressed="true"><span aria-hidden="true">📺</span> Televisor</button>
+      <button type="button" data-modo="sin-televisor" aria-pressed="false"><span aria-hidden="true">🎬</span> Sin televisor</button>
+      <button type="button" data-modo="360" aria-pressed="false"><span aria-hidden="true">🌐</span> 360°</button>
+    </div>
+
     <!-- Si el navegador bloquea el sonido, el video arranca en silencio y aparece esto -->
     <button class="activar-sonido" id="activar-sonido" type="button" hidden>🔊 Activar sonido</button>
 
@@ -157,6 +164,16 @@
     <div class="cine-completo-video" id="cine-completo-video"></div>
     <div class="cine-completo-cuerpo" id="cine-completo-cuerpo"></div>
   </div>
+  <!-- Modo 360°: cine curvo envolvente (js/cine-360.js). La letra y los controles se mueven aquí. -->
+  <div class="cine-360" id="cine-360" role="dialog" aria-modal="true" aria-label="Video en modo 360°" hidden>
+    <div class="cine-360-escena" id="cine-360-escena"></div>
+    <div class="cine-360-barra">
+      <p class="cine-360-aviso" id="cine-360-aviso">Preparando el cine 360°…</p>
+      <button class="cine-360-salir" id="cine-360-salir" type="button">✕ Salir del 360°</button>
+    </div>
+    <div class="cine-360-cuerpo" id="cine-360-cuerpo"></div>
+  </div>
+
   <!-- Aquí «espera» el video (invisible) cuando no está a pantalla completa -->
   <div class="video-estacionamiento" id="video-estacionamiento" aria-hidden="true"></div>
 

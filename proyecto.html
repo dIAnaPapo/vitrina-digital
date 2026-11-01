@@ -47,7 +47,7 @@
 </div>
 
 <script type="module">
-  import { cargarDatos, leerParametro, escapar, mostrarError, iconos } from './js/datos.js';
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, portadaDe } from './js/datos.js';
   document.getElementById('logo-icono').innerHTML = iconos.ar;
 
   try {
@@ -63,7 +63,7 @@
     const volver = document.getElementById('volver');
     volver.href = `carrera.html?c=${encodeURIComponent(p.carrera)}`;
     if (carrera) volver.querySelector('.boton-volver-texto').textContent = `Proyectos de ${carrera.nombreCorto ?? carrera.nombre}`;
-    document.getElementById('fondo').src = p.imagenes[0]?.src ?? '';
+    document.getElementById('fondo').src = portadaDe(p);
 
     // ---- Botón principal: Ver en AR (si el proyecto tiene) ----
     document.getElementById('acciones').innerHTML = p.ar
@@ -71,7 +71,7 @@
       : '';
 
     // ---- Ficha ----
-    const imagenes = p.imagenes.map(img => `<img src="${escapar(img.src)}" alt="${escapar(img.alt)}" loading="lazy">`).join('');
+    const imagenes = (p.imagenes ?? []).map(img => `<img src="${escapar(img.src)}" alt="${escapar(img.alt)}" loading="lazy">`).join('');
     // Video con subtítulos (la letra). El navegador muestra el botón «CC» para activarlos o desactivarlos.
     const pista = p.subtitulos ? `<track kind="subtitles" src="${escapar(p.subtitulos)}" srclang="es" label="Letra (español)" default>` : '';
     const video = p.video ? `<video src="${escapar(p.video)}" poster="${escapar(p.poster ?? '')}" controls playsinline preload="metadata" aria-label="Video del proyecto ${escapar(p.titulo)}">${pista}</video>` : '';

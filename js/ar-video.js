@@ -10,10 +10,31 @@
 //   - suena (así el audio sigue igual al entrar y salir de la AR, sin duplicados),
 //   - y en iPhone / celulares sin WebXR se muestra a pantalla completa
 //     en un reproductor propio de la página, con la misma letra y botones.
+//
+// Modos de visualización (Ronda 2): 📺 Televisor · 🎬 Sin televisor · 🌐 360°.
+//   - Televisor / Sin televisor: el .glb trae las dos versiones; solo se cambia
+//     la transparencia de los materiales (el video sigue igual).
+//   - 360°: cine curvo en pantalla completa con three.js (js/cine-360.js).
 // =========================================================
 
 import { cargarCues, crearKaraoke } from './karaoke.js';
 import { registrar } from './metricas.js';
+
+// Guardamos la sesión de AR (WebXR) que abre model-viewer, para poder cerrarla
+// si la persona elige el modo 360° estando dentro de la AR.
+let sesionXR = null;
+if (navigator.xr?.requestSession) {
+  const original = navigator.xr.requestSession.bind(navigator.xr);
+  navigator.xr.requestSession = async (...args) => {
+    const sesion = await original(...args);
+    sesionXR = sesion;
+    sesion.addEventListener('end', () => { if (sesionXR === sesion) sesionXR = null; });
+    return sesion;
+  };
+}
+
+const PARTES_TELEVISOR = ['mueble', 'marco', 'pie', 'antena', 'pantalla'];
+const PARTES_SIN_TELEVISOR = ['pantalla-libre', 'halo', 'luz-mesa'];
 
 const PREFERENCIA_LETRA = 'vitrina:letra';
 const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
@@ -30,9 +51,11 @@ export async function iniciarCine(visor, proyecto) {
 
   // ---------- 1. Video como textura de la pantalla ----------
   if (!visor.loaded) await new Promise(r => visor.addEventListener('load', r, { once: true }));
-  const material = visor.model.getMaterialByName('pantalla');
   const textura = visor.createVideoTexture(proyecto.video);
-  material.pbrMetallicRoughness.baseColorTexture.setTexture(textura);
+  // La MISMA textura (el mismo video) va en la pantalla del televisor y en la pantalla libre
+  for (const nombre of ['pantalla', 'pantalla-libre']) {
+    visor.model.getMaterialByName(nombre)?.pbrMetallicRoughness.baseColorTexture.setTexture(textura);
+  }
   const video = textura.source.element;     // el <video> que creó model-viewer
   video.loop = false;
   video.preload = 'auto';
@@ -78,7 +101,12 @@ export async function iniciarCine(visor, proyecto) {
     actualizarBotones();
   }
 
-  botonPlay.addEventListener('click', () => (video.paused ? reproducir() : video.pause()));
+  // Se guía por lo que pidió la persona: al principio model-viewer arranca el video en
+  // silencio por su cuenta, y un toque rápido en ▶ no debe confundirse con «pausar».
+  botonPlay.addEventListener('click', () => {
+    if (video.paused || video.ended || !quiereReproducir) reproducir();
+    else { quiereReproducir = false; video.pause(); }
+  });
   botonReiniciar.addEventListener('click', () => { video.currentTime = 0; reproducir(); });
   botonSonido.addEventListener('click', () => {
     sonidoActivo = video.muted;           // si estaba en silencio, ahora suena
@@ -201,9 +229,95 @@ export async function iniciarCine(visor, proyecto) {
     });
   }
 
+  // ---------- 5. Modos de visualización: 📺 Televisor · 🎬 Sin televisor · 🌐 360° ----------
+  const contModos = $('cine-modos');
+  const modosPermitidos = proyecto.ar.modos ?? ['televisor', 'sin-televisor', '360'];
+  contModos.querySelectorAll('[data-modo]').forEach(b => { b.hidden = !modosPermitidos.includes(b.dataset.modo); });
+  contModos.hidden = modosPermitidos.length < 2;
+  let modoActual = null;          // 'televisor' o 'sin-televisor' (lo que se ve en 3D / AR)
+  let escena360 = null;
+
+  /** Cambia la transparencia (alfa) de un material del .glb sin tocar su color. */
+  function alfa(nombre, valor) {
+    const pbr = visor.model.getMaterialByName(nombre)?.pbrMetallicRoughness;
+    if (!pbr) return;
+    const [r, g, b] = pbr.baseColorFactor;
+    pbr.setBaseColorFactor([r, g, b, valor]);
+  }
+
+  function marcarModo(modo) {
+    contModos.querySelectorAll('[data-modo]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modo === modo)));
+  }
+
+  function ponerModo(modo, registrarlo = true) {
+    if (modo === '360') { abrir360(); return; }
+    const conTelevisor = modo === 'televisor';
+    PARTES_TELEVISOR.forEach(n => alfa(n, conTelevisor ? 1 : 0));
+    PARTES_SIN_TELEVISOR.forEach(n => alfa(n, conTelevisor ? 0 : 1));
+    // La pantalla sola flota: sin la sombra del televisor (la reemplaza la luz sobre la mesa)
+    visor.shadowIntensity = conTelevisor ? 1 : 0;
+    modoActual = modo;
+    marcarModo(modo);
+    if (registrarlo) registrar('modo_video', { proyecto: proyecto.id, modo });
+  }
+
+  let abriendo360 = false;
+  function abrir360() {
+    if (escena360 || abriendo360) return;
+    abriendo360 = true;
+    // Esto pasa DENTRO del toque, sin esperas antes: el permiso del giroscopio
+    // (iPhone lo exige así) y el play con sonido.
+    const permiso = modulo360 ? modulo360.pedirPermisoGiroscopio() : Promise.resolve(false);
+    if (video.paused) reproducir();
+    continuar360(permiso).finally(() => { abriendo360 = false; });
+  }
+
+  async function continuar360(permiso) {
+    const { crearEscena360 } = modulo360 ?? await import('./cine-360.js');
+    marcarModo('360');
+    registrar('modo_video', { proyecto: proyecto.id, modo: '360' });
+    if (sesionXR) { try { await sesionXR.end(); } catch { /* ya estaba cerrada */ } }
+    if (!completo.hidden) cerrarCompleto();
+    const capa = $('cine-360');
+    $('cine-360-cuerpo').append(cine);
+    capa.hidden = false;
+    document.body.classList.add('cine-abierto');
+    $('cine-360-salir').focus();
+    try {
+      escena360 = await crearEscena360($('cine-360-escena'), video, { permisoGiroscopio: await permiso });
+      $('cine-360-aviso').textContent = 'Mueve el celular o arrastra con el dedo para mirar a tu alrededor';
+    } catch (e) {
+      console.error(e);
+      $('cine-360-aviso').textContent = 'No se pudo abrir el modo 360° en este dispositivo.';
+    }
+  }
+
+  function cerrar360() {
+    escena360?.destruir();
+    escena360 = null;
+    lugarCine.append(cine);
+    $('cine-360').hidden = true;
+    document.body.classList.remove('cine-abierto');
+    marcarModo(modoActual);
+    contModos.querySelector('[data-modo="360"]')?.focus();
+  }
+
+  // Se precarga el módulo del 360° (es pequeño; three.js se descarga recién al abrirlo),
+  // para poder pedir el permiso del giroscopio sin esperas dentro del toque.
+  let modulo360 = null;
+  import('./cine-360.js').then(m => { modulo360 = m; });
+  contModos.addEventListener('click', (e) => {
+    const boton = e.target.closest('[data-modo]');
+    if (boton) ponerModo(boton.dataset.modo);
+  });
+  $('cine-360-salir').addEventListener('click', cerrar360);
+  $('cine-360').addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar360(); });
+  ponerModo(modosPermitidos.includes(proyecto.ar.modoInicial) && proyecto.ar.modoInicial !== '360'
+    ? proyecto.ar.modoInicial : 'televisor', false);
+
   // En WebXR, tocar los controles NO debe mover la pantalla.
-  [cine, sonidoGrande].forEach(el => el.addEventListener('beforexrselect', ev => ev.preventDefault()));
+  [cine, sonidoGrande, contModos].forEach(el => el.addEventListener('beforexrselect', ev => ev.preventDefault()));
 
   // Para pruebas desde la consola
-  window.vitrina = { ...(window.vitrina ?? {}), video, abrirCompleto, cerrarCompleto };
+  window.vitrina = { ...(window.vitrina ?? {}), video, abrirCompleto, cerrarCompleto, ponerModo, cerrar360 };
 }

@@ -193,6 +193,41 @@ model-viewer[ar-status="object-placed"] .boton-ar { display: none; }
   background: #fff; color: var(--azul); font: 700 18px var(--texto); box-shadow: 0 12px 34px rgba(4, 60, 120, .45);
 }
 
+/* ---------- Modos de visualización (pastillas) ---------- */
+.cine-modos {
+  position: absolute; left: 50%; top: 88px; transform: translateX(-50%); z-index: 3;
+  display: flex; gap: 4px; padding: 4px; max-width: calc(100% - 24px);
+  border-radius: 999px; background: rgba(255, 255, 255, .94); box-shadow: 0 8px 24px rgba(4, 60, 120, .3);
+}
+.cine-modos button {
+  min-height: 44px; padding: 0 12px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  background: transparent; color: var(--azul); font: 600 12px var(--texto); letter-spacing: .02em;
+}
+.cine-modos button[aria-pressed="true"] { background: var(--azul); color: #fff; }
+/* Dentro de la AR el botón de AR desaparece: las pastillas suben (debajo del mensaje de estado) */
+model-viewer[ar-status="session-started"] .cine-modos,
+model-viewer[ar-status="object-placed"] .cine-modos { top: 64px; }
+
+/* ---------- Modo 360° (cine curvo) ---------- */
+.cine-360 { position: fixed; inset: 0; z-index: 60; background: var(--degradado); }
+.cine-360-escena { position: absolute; inset: 0; }
+.cine-360-escena canvas { display: block; }
+.cine-360-barra {
+  position: absolute; left: 0; right: 0; top: 0; z-index: 2;
+  display: flex; align-items: flex-start; gap: 10px; padding: calc(12px + env(safe-area-inset-top)) 12px 0;
+}
+.cine-360-aviso {
+  flex: 1; margin: 0; padding: 8px 14px; border-radius: 16px; font-size: 13px; line-height: 1.35; color: #fff;
+  background: rgba(6, 98, 174, .75); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+.cine-360-salir {
+  min-height: 48px; padding: 0 18px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
+  background: #fff; color: var(--azul); font: 700 13px var(--texto); box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+}
+.cine-360-cuerpo { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; }
+.cine-360 .cine { position: static; }
+.cine-360 #cine-completo-abrir { display: none; }
+
 /* Dentro de la AR no hace falta el botón de pantalla completa */
 model-viewer[ar-status="session-started"] #cine-completo-abrir,
 model-viewer[ar-status="object-placed"] #cine-completo-abrir { display: none; }
