@@ -11,7 +11,7 @@
 //     para que la portada cargue rápido.
 // =========================================================
 
-import { escapar, iconos } from './datos.js';
+import { escapar, iconos, tipoDe } from './datos.js';
 
 const INTERVALO = 8000;       // ms entre proyectos
 const FUNDIDO = 600;          // ms del fundido (igual que en CSS)
@@ -69,7 +69,7 @@ export function crearCarrusel(raiz, proyectos, carreras) {
     cargado.set(visor, i);
     visor.alt = p.ar.alt;
     // Cámara más cerca que «auto» para que el modelo llene el visor (se puede ajustar por proyecto con "camaraHero")
-    visor.cameraOrbit = p.ar.camaraHero ?? (p.ar.tipo === 'video' ? '-25deg 80deg 96%' : '30deg 62deg 80%');
+    visor.cameraOrbit = p.ar.camaraHero ?? (tipoDe(p) === 'video' ? '-25deg 80deg 96%' : '30deg 62deg 80%');
     visor.autoRotate = !sinMovimiento.matches;
     visor.src = p.ar.modeloHero ?? p.ar.modelo;
     await new Promise((listo) => {
@@ -78,7 +78,7 @@ export function crearCarrusel(raiz, proyectos, carreras) {
       visor.addEventListener('error', fin);
     });
     // Televisor: el póster va en la pantalla (imagen ya volteada para la convención de glTF)
-    if (p.ar.tipo === 'video' && p.ar.pantallaHero && visor.model) {
+    if (tipoDe(p) === 'video' && p.ar.pantallaHero && visor.model) {
       const material = visor.model.getMaterialByName('pantalla');
       if (material) {
         try {

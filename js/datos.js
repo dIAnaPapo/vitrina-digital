@@ -24,6 +24,21 @@ export function portadaDe(p) {
   return p.portada ?? p.imagenes?.[0]?.src ?? '';
 }
 
+/**
+ * Tipo de experiencia de un proyecto: "maqueta" (arquitectura), "escenario" (diorama de
+ * un videojuego o un modelo 3D) o "video" (pantalla de cine). Decide qué AR se abre.
+ */
+export function tipoDe(p) {
+  return p.tipo ?? p.ar?.tipo ?? 'maqueta';
+}
+
+/** Cómo se nombra lo que se coloca en la AR, con el artículo correcto. */
+export function palabrasObjeto(tipo) {
+  return tipo === 'escenario'
+    ? { la: 'el escenario', al: 'al escenario', La: 'El escenario', nombre: 'Escenario', a: 'o' }
+    : { la: 'la maqueta', al: 'a la maqueta', La: 'La maqueta', nombre: 'Maqueta', a: 'a' };
+}
+
 /** «1 proyecto» / «2 proyectos» */
 export function textoProyectos(n) {
   return `${n} proyecto${n === 1 ? '' : 's'}`;

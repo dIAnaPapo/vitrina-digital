@@ -6,28 +6,34 @@
 // - Con el plano agrandado, se arrastra con un dedo para recorrerlo.
 // - Flechas ‹ › (o las del teclado) para pasar de plano; Esc o ✕ para cerrar.
 // - Accesible: es un diálogo, el foco va al botón Cerrar y vuelve a la miniatura.
+// - Sirve también para documentos (por ejemplo, las páginas de un GDD): estilo "documento".
 // =========================================================
 
 const MIN = 1, MAX = 6;
+const TEXTOS = {
+  planos: { ampliado: 'Plano ampliado', cerrar: 'Cerrar el plano', anterior: 'Plano anterior', siguiente: 'Plano siguiente' },
+  documento: { ampliado: 'Página ampliada', cerrar: 'Cerrar la página', anterior: 'Página anterior', siguiente: 'Página siguiente' }
+};
 
-export function crearVisorPlanos(planos) {
+export function crearVisorPlanos(planos, estilo = 'planos') {
+  const t = TEXTOS[estilo] ?? TEXTOS.planos;
   const capa = document.createElement('div');
   capa.className = 'visor-planos';
   capa.hidden = true;
   capa.setAttribute('role', 'dialog');
   capa.setAttribute('aria-modal', 'true');
-  capa.setAttribute('aria-label', 'Plano ampliado');
+  capa.setAttribute('aria-label', t.ampliado);
   capa.innerHTML = `
     <div class="visor-planos-barra">
       <p class="visor-planos-titulo" aria-live="polite"></p>
-      <button type="button" class="visor-boton" data-accion="cerrar" aria-label="Cerrar el plano">✕</button>
+      <button type="button" class="visor-boton" data-accion="cerrar" aria-label="${t.cerrar}">✕</button>
     </div>
     <div class="visor-planos-lienzo"><img alt="" draggable="false"></div>
     <div class="visor-planos-controles">
-      <button type="button" class="visor-boton" data-accion="anterior" aria-label="Plano anterior">‹</button>
+      <button type="button" class="visor-boton" data-accion="anterior" aria-label="${t.anterior}">‹</button>
       <button type="button" class="visor-boton" data-accion="alejar" aria-label="Alejar">−</button>
       <button type="button" class="visor-boton" data-accion="acercar" aria-label="Acercar">+</button>
-      <button type="button" class="visor-boton" data-accion="siguiente" aria-label="Plano siguiente">›</button>
+      <button type="button" class="visor-boton" data-accion="siguiente" aria-label="${t.siguiente}">›</button>
     </div>
     <p class="visor-planos-ayuda">Pellizca con dos dedos o toca dos veces para acercar</p>`;
   document.body.append(capa);

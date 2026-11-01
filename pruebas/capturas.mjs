@@ -12,6 +12,7 @@ import { levantarServidor } from './servidor.mjs';
 const PAGINAS = process.argv.slice(2).length ? process.argv.slice(2) : [
   'index.html', 'carrera.html?c=arquitectura', 'carrera.html?c=multimedia',
   'proyecto.html?id=casa-moderna', 'proyecto.html?id=cuentos-y-espias',
+  ...['oficina', 'london', 'deliveryrush', 'cafeteria'].flatMap(id => [`proyecto.html?id=${id}`, `ar.html?id=${id}`]),
   'ar.html?id=casa-moderna', 'ar.html?id=cuentos-y-espias', 'placa.html'
 ];
 const ANCHOS = [

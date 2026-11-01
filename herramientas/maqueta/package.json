@@ -1,12 +1,13 @@
 {
   "name": "optimizar-maqueta",
   "private": true,
-  "description": "Optimiza el .glb de Arquitectura para celular: node optimizar.mjs original.glb ../../modelos/casa-moderna.glb 25",
+  "description": "Optimiza los modelos 3D para celular (node preparar.mjs todos) y pasa planos y documentos a WebP (node imagenes.mjs)",
   "type": "module",
   "dependencies": {
     "@gltf-transform/core": "4.2.1",
     "@gltf-transform/extensions": "4.2.1",
     "@gltf-transform/functions": "4.2.1",
+    "meshoptimizer": "0.22.0",
     "sharp": "0.35.5"
   }
 }

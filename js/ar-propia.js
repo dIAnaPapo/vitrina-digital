@@ -34,6 +34,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { diagnosticoActivo, crearDiagnostico } from './diagnostico.js';
 
 /** ¿Este navegador puede abrir AR con WebXR? (Chrome en Android con ARCore) */
@@ -61,8 +62,10 @@ function leerAjustes() {
  *   alTocarPunto  función(id) que abre la tarjeta del punto
  *   registrar     función de métricas
  *   modoPrueba    true = sin cámara (computadora)
+ *   objeto        palabras para los mensajes: «la maqueta» o «el escenario» (datos.js → palabrasObjeto)
  */
-export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, alEntrar = () => {}, alSalir = () => {}, registrar = () => {}, modoPrueba = false }) {
+export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, alEntrar = () => {}, alSalir = () => {}, registrar = () => {}, modoPrueba = false,
+  objeto = { la: 'la maqueta', nombre: 'Maqueta', a: 'a' } }) {
   const cortes = proyecto.ar.cortes ?? [];
   const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const ajustes = leerAjustes();
@@ -105,7 +108,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   // ---------------------------------------------------------
   function precargar() {
     precarga ??= (async () => {
-      const gltf = await new GLTFLoader().loadAsync(proyecto.ar.modelo);
+      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(proyecto.ar.modelo);   // modelos comprimidos con meshopt
       escena = new THREE.Scene();
       renderer = new THREE.WebGLRenderer({ antialias: ajustes.antialias, alpha: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
@@ -129,7 +132,9 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
         if (!o.isMesh) return;
         const normal = materialBarato(o.material);
         const corte = normal.clone();
-        corte.side = THREE.DoubleSide;     // con el techo cortado se ven las caras de adentro de los muros
+        // Con el techo cortado se ven las caras de adentro de los muros. Si los muros son planos simples
+        // (una sola cara, como en la Cafetería), "cortesDobleCara": false evita que aparezca su lado de afuera.
+        corte.side = proyecto.ar.cortesDobleCara === false ? THREE.FrontSide : THREE.DoubleSide;
         corte.clippingPlanes = [plano];
         variantes.push({ malla: o, normal, corte });
         o.material = normal;
@@ -175,7 +180,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     const b = new THREE.MeshLambertMaterial({
       name: m.name, color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap,
       emissiveIntensity: m.emissiveIntensity, transparent: m.transparent, opacity: m.opacity,
-      alphaTest: m.alphaTest, depthWrite: m.depthWrite, vertexColors: m.vertexColors, side: THREE.FrontSide
+      alphaTest: m.alphaTest, depthWrite: m.depthWrite, vertexColors: m.vertexColors, side: THREE.FrontSide,
+      flatShading: m.flatShading                    // piezas «low poly» guardadas sin normales
     });
     m.dispose();
     return b;
@@ -345,7 +351,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       hayHit = resultados.length > 0;
       if (hayHit) puntoHit.setFromMatrixPosition(matrizHit.fromArray(resultados[0].getPose(referencia).transform.matrix));
       if (hayHit && colocadaManual && el.estado.dataset.fase !== 'mesa-hallada') {
-        mostrarEstado('Se encontró la mesa: toca ⊙ Centrar para apoyar la maqueta en ella.', 0, 'mesa-hallada');
+        mostrarEstado(`Se encontró la mesa: toca ⊙ Centrar para apoyar ${objeto.la} en ella.`, 0, 'mesa-hallada');
       }
     }
     // Antes de colocar: la retícula sigue a la superficie detectada
@@ -354,7 +360,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       reticula.visible = hayHit;
       const buscando = (el.estado.dataset.fase ?? '').startsWith('buscando');
       if (hayHit) {
-        if (buscando) mostrarEstado('Toca para colocar la maqueta.', 0, 'colocar');
+        if (buscando) mostrarEstado(`Toca para colocar ${objeto.la}.`, 0, 'colocar');
       } else if (!buscando) {
         mostrarEstado('Buscando superficie… Mueve el celular despacio apuntando a la mesa.');
       }
@@ -459,9 +465,9 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     diag?.hito('colocada');
     if (manual) diag?.hito('manual');
     mostrarEstado(manual
-      ? 'Maqueta colocada frente a ti. Muévela con dos dedos; si aparece la mesa, toca ⊙ Centrar para apoyarla.'
-      : 'Maqueta colocada. Gira con un dedo, pellizca para el tamaño y acércate para ver los detalles.', 5000);
-    registrar('ar_colocada', { proyecto: proyecto.id, modo: manual ? 'colocar-aqui' : 'maqueta' });
+      ? `${objeto.nombre} colocad${objeto.a} frente a ti. Muével${objeto.a} con dos dedos; si aparece la mesa, toca ⊙ Centrar para apoyarl${objeto.a}.`
+      : `${objeto.nombre} colocad${objeto.a}. Gira con un dedo, pellizca para el tamaño y acércate para ver los detalles.`, 5000);
+    registrar('ar_colocada', { proyecto: proyecto.id, modo: manual ? 'colocar-aqui' : 'mesa' });
     if (el.tutorial.dataset.paso !== undefined && !el.tutorial.hidden && Number(el.tutorial.dataset.paso) < 2) mostrarTutorial(2);
   }
 
@@ -555,7 +561,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     if (accion === 'ocultar-tutorial') cerrarTutorial(true);
     if (accion === 'colocar-aqui') { if (!colocada) colocarFrente(); return; }
     if (!colocada &&['izquierda', 'derecha', 'menos', 'mas', 'centrar', 'interior'].includes(accion)) {
-      mostrarEstado('Primero coloca la maqueta: toca la pantalla cuando veas el anillo.', 2500);
+      mostrarEstado(`Primero coloca ${objeto.la}: toca la pantalla cuando veas el anillo.`, 2500);
       return;
     }
     if (accion === 'izquierda') giroObjetivo += Math.PI / 4;
@@ -568,12 +574,12 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       inicial.posicion.copy(puntoHit);
       colocadaManual = false;
       apagarHitTest();
-      mostrarEstado('Maqueta apoyada en la mesa.', 2200);
+      mostrarEstado(`${objeto.nombre} apoyad${objeto.a} en la mesa.`, 2200);
     } else if (accion === 'centrar') {
       // El centro de la pantalla sobre el plano de la mesa (sin volver a encender el hit-test)
       const centro = puntoEnLaMesa(anchoCapa / 2, altoCapa / 2);
       if (centro && centro.distanceTo(pivote.position) < 5) posicionObjetivo = centro;
-      else mostrarEstado('Apunta a la mesa para centrar la maqueta.', 2200);
+      else mostrarEstado(`Apunta a la mesa para centrar ${objeto.la}.`, 2200);
     }
     if (accion === 'interior') {
       nivelInterior = (nivelInterior + 1) % (cortes.length + 1);

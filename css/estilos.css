@@ -368,6 +368,7 @@ a.chip-claro:hover { background: var(--hielo); }
 .plano:hover { box-shadow: 0 10px 24px rgba(6, 98, 174, .18); transform: translateY(-2px); }
 .plano img { width: 100%; height: auto; aspect-ratio: 640 / 452; object-fit: cover; }
 .plano span { display: block; padding: 10px 12px; font-size: 13px; font-weight: 600; }
+.documento .plano img { aspect-ratio: 16 / 9; }   /* páginas apaisadas de un documento (GDD) */
 
 /* ---------- Visor grande de planos (js/visor-planos.js) ---------- */
 .visor-planos { position: fixed; inset: 0; z-index: 80; display: flex; flex-direction: column; background: rgba(8, 20, 40, .94); color: var(--blanco); }

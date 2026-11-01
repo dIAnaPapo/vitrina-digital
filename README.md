@@ -137,12 +137,16 @@ vitrina-digital/
 │   └── proyectos.json  ← ★ TODO EL CONTENIDO. Lo único que edita el docente (H4)
 ├── modelos/
 │   ├── casa-moderna.glb        ← maqueta 1:25 optimizada (947 KB, ver sección 7)
+│   ├── oficina.glb, london.glb, deliveryrush.glb, cafeteria.glb  ← proyectos de la Ronda 3 (sección 7b)
+│   ├── *-hero.glb              ← versiones livianas (< 1 MB) para el carrusel del inicio
 │   └── pantalla-cine.glb       ← televisor retro para la AR de Multimedia (generado por código)
 ├── videos/
 │   ├── cuentos-y-espias.mp4    ← video 720p (9 MB, H.264 + AAC)
 │   └── cuentos-y-espias.es.vtt ← letra con tiempos (subtítulos)
-├── herramientas/       ← generador del .glb de la pantalla (no es parte del recorrido)
-├── img/                ← imágenes de las fichas (de ejemplo, reemplazar)
+├── herramientas/       ← no es parte del recorrido:
+│   ├── pantalla-glb.js       generador del .glb de la pantalla de cine
+│   └── maqueta/              optimizar.mjs, preparar.mjs (recetas por proyecto), imagenes.mjs (planos y GDD a WebP)
+├── img/                ← portadas (<id>-render.webp) y una carpeta por proyecto con sus planos o su GDD
 ├── css/
 │   ├── estilos.css     ← estilos generales (colores Ecotec)
 │   └── ar.css          ← estilos de la página AR
@@ -153,7 +157,7 @@ vitrina-digital/
     ├── ar.js           ← lógica de la AR: modelo, puntos, guía, asistente
     ├── ar-propia.js    ← «Ver en mi espacio» de la maqueta con three.js + WebXR (gestos, botones, tutorial)
     ├── diagnostico.js  ← panel ?debug=1 de la AR propia (FPS, llamadas, triángulos, memoria)
-    ├── visor-planos.js ← galería de planos con visor grande y zoom
+    ├── visor-planos.js ← galería (planos o páginas de un documento) con visor grande y zoom
     ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa y modos
     ├── cine-360.js     ← modo 360° «cine curvo» (three.js, giroscopio)
     ├── karaoke.js      ← letra palabra por palabra sincronizada con el video
@@ -278,6 +282,39 @@ Meta: 60 fps (mínimo 30 estables). El modelo ya era liviano (12 384 triángulos
 4. Guárdalo en `modelos/` y cambia la ruta en el JSON: `"modelo": "modelos/tu-archivo.glb"`.
 5. **Ubicar los 3 puntos:** abre **modelviewer.dev/editor**, arrastra tu `.glb`, entra a la pestaña de *Hotspots*, haz clic en el modelo donde quieres cada punto y copia los valores `data-position` y `data-normal` al JSON (`"posicion"` y `"normal"`).
 
+## 7b. Los proyectos de la Ronda 3 (Bloque F)
+
+| Proyecto | Carrera · tipo | Autores | ¿Ejemplo? | Galería |
+|---|---|---|---|---|
+| Casa Moderna | Arquitectura · maqueta | Madeleine Morales | Sí | 9 planos |
+| Oficina Loft 18 | Arquitectura · maqueta | Alberto Urgilés | Sí | 8 planos |
+| Rascacielos London | Arquitectura · maqueta | Arianna Gutiérrez | Sí | 10 planos |
+| Bienvenidos a Cuentos y Espías | Multimedia · video | Diana Espinoza | No | Video |
+| Next Order: Delivery Rush | Multimedia · escenario | Arllys Ramos y Xavier Ponce | No | GDD (12 páginas) |
+| Cafetería M3D | Multimedia · escenario | Arllys Ramos | No | — |
+
+Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redactó Claude a partir del GDD, los planos y los modelos. Llevan el campo `"_revisar"` en el JSON hasta que el equipo los confirme.
+
+### Modelos optimizados (`node preparar.mjs todos`)
+
+| Modelo | Original | En el sitio | Triángulos | Llamadas de dibujo | Carrusel |
+|---|---|---|---|---|---|
+| Delivery Rush (diorama 1:24, 56 × 30 cm) | 11,5 MB (FBX convertido) | **0,8 MB** | 347 688 → 81 718 | 1 020 → 19 | 0,45 MB |
+| Cafetería (1:22, 56 × 55 cm) | 1,6 MB | **0,3 MB** | 32 357 | 189 → 9 | 0,19 MB |
+| Oficina (1:30, 51 × 39 cm) | 11,8 MB | **1,9 MB** | 39 882 | 133 → 17 | 0,9 MB |
+| London (1:400, 42 cm de alto) | 29,7 MB | **1,8 MB** | 142 742 → 81 927 | 60 → 20 | 0,95 MB |
+
+- **Delivery Rush:** sin techo (diorama) y sin las guías del diseño del nivel (huella de inicio, círculos de giro y ruta del robot), que no se ven en el juego. La comida y los adornos se simplificaron: a 1:24 un pastel mide menos de 1 cm. Como eran piezas *low poly* con caras planas, se guardan sin normales (se sombrean planas igual).
+- **London:** sin los mapas de relieve y rugosidad (a 1:400 no se notan y la AR propia no los usa) y con las fachadas simplificadas.
+- Todos van con **compresión meshopt**. model-viewer y three.js bajan un decodificador de 25 KB (configurado en `index.html`, `ar.html` y `js/ar-propia.js`).
+- «Ver interior»: Oficina → Sin techo / Planta baja · London → Piso 12 / Lobby · Delivery Rush → Sin vigas / Muros bajos · Cafetería → Sin plafón (`"cortesDobleCara": false` porque sus muros son planos de una sola cara).
+
+### Créditos y licencias (revisar antes de presentar)
+- **Oficina Loft 18:** modelo «free Loft 18 mini office v.optimization» de **dasy444** (Sketchfab), **licencia Sketchfab Standard**. Permite usarlo en cualquier medio y en obras derivadas, pero **no permite redistribuir el archivo del modelo suelto**. Ojo: para que la AR funcione, `modelos/oficina.glb` queda publicado y se puede descargar desde el repositorio público.
+- **Rascacielos London:** «[FREE] London Skyscraper» de **99.Miles** (Sketchfab), **CC BY 4.0**: permite modificarlo y publicarlo nombrando al autor y la licencia (está en la ficha).
+- **Next Order: Delivery Rush:** «Modelado en Blender · Desarrollado en Unreal Engine 5». La lámina 12 del GDD declara recursos externos (plantilla VR de Unreal Engine 5.4.4, props decorativos de Sketchfab y sonidos de Freesound.org); en la ficha figuran como «por confirmar con el equipo».
+- **Cafetería M3D:** el modelo original usaba imágenes de internet (un damero de iStock y fotos de Marilyn Monroe, una guitarra y los Beatles en los cuadros). En la versión web se cambiaron por diseños propios generados en `herramientas/maqueta/texturas-cafeteria.mjs`; el archivo de la estudiante no se modificó.
+
 ## 8. La placa: QR (hoy) y NFC (después)
 
 **La dirección pública está en un solo lugar:** `js/config.js` → `URL_PUBLICA = 'https://dianapapo.github.io/vitrina-digital/'`.
@@ -288,7 +325,7 @@ Meta: 60 fps (mínimo 30 estables). El modelo ya era liviano (12 384 triángulos
 - **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
 
 ### Pruebas automáticas (carpeta `pruebas/`)
-- `npm test` corre `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
+- `npm test` corre `proyectos.test.mjs` (ficha y AR propia de los 4 proyectos nuevos, «3 proyectos» por carrera y carrusel de 6), `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
 - `node rendimiento.mjs` mide la AR propia (modo de prueba) con el panel de diagnóstico.
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
@@ -313,16 +350,32 @@ Archivo: `js/asistente.js`. Datos: `asistente.pasajes` en el JSON.
 
 **Fase 2 (búsqueda semántica con Transformers.js):** reemplazar la función `puntuar()` por una comparación de *embeddings* con `@huggingface/transformers`. La función `responder()` devuelve lo mismo, así que `ar.js` no cambia. Ojo: los modelos multilingües pesan ~100 MB, demasiado para un celular frente a un aula; por eso el MVP usa palabras clave.
 
-## 10. Qué editar para cada proyecto (guía para el docente — H4)
+## 10. Cómo agregar un proyecto nuevo (guía para el docente — H4)
 
-Abrir `data/proyectos.json` y, dentro de `"proyectos"`, copiar un bloque `{ … }` y cambiar:
+Todo el contenido está en `data/proyectos.json`. En la Fase 5 esto se hará desde el panel de administración; mientras tanto:
 
-- En `"carreras"`: `nombre`, `descripcion`, `icono` (`arquitectura` o `multimedia`) y `orden` (1 = primera tarjeta del inicio)
-- `id` (sin espacios ni tildes: `mi-proyecto`), `carrera` (`arquitectura` o `multimedia`)
-- `titulo`, `ubicacion`, `estudiante`, `materia`, `periodo`, `descripcion`
-- `imagenes` (ruta + texto alternativo, que describe la imagen para lectores de pantalla)
-- `ar`: `null` si no tiene AR, o el bloque con modelo y puntos
-- Borrar todas las marcas `[EJEMPLO]`
+1. **Elige el tipo** (campo `"tipo"`). Decide qué experiencia AR se abre, sin tocar código:
+   | `tipo` | Para qué | AR |
+   |---|---|---|
+   | `maqueta` | Arquitectura: casas, edificios | AR propia con puntos, asistente y «Ver interior» |
+   | `escenario` | Un diorama de videojuego o un modelo 3D (Multimedia) | La misma AR propia; los textos dicen «el escenario» |
+   | `video` | Un video | Pantalla de cine con la letra (como Cuentos y Espías) |
+2. **Prepara el modelo 3D** (maqueta o escenario):
+   - Expórtalo a `.glb` desde Blender (File → Export → glTF Binary). Si viene en `.fbx`, conviértelo con `npx fbx2gltf@0.9.7-p1` o reexpórtalo desde Blender.
+   - Copia el original a `_material/3_proyectos/<carrera>/` y agrega una receta en `herramientas/maqueta/preparar.mjs` (copia una existente: escala, qué quitar, qué simplificar).
+   - `cd herramientas/maqueta && npm install && node preparar.mjs <id>` → crea `modelos/<id>.glb` y `modelos/<id>-hero.glb` (versión liviana para el carrusel, < 1 MB).
+3. **Prepara las imágenes**: agrega el grupo en `herramientas/maqueta/imagenes.mjs` y córrelo (`node imagenes.mjs`): genera WebP de 2000 px y miniaturas en `img/<id>/`. La portada va en `img/<id>-render.webp` (1200 × 900).
+4. **Copia un bloque de proyecto** en `"proyectos"` (el más parecido) y cambia:
+   - `id` (sin espacios ni tildes), `carrera`, `tipo`, `titulo`, `estudiante`, `materia`, `periodo`, `descripcion`, `portada`
+   - `ejemplo`: `true` muestra la etiqueta amarilla «PROYECTO DE EJEMPLO»; bórralo en los proyectos reales
+   - `galeria` (opcional): `{ "titulo": "Planos", "estilo": "planos" | "documento", "imagenes": [ { src, mini, titulo, alt } ] }`. «documento» muestra páginas apaisadas (por ejemplo, un GDD).
+   - `creditos` (opcional): lista de `{ "etiqueta", "texto" }`. `creditoModelo` (opcional): modelo de Sketchfab u otro sitio con autor, enlace y licencia.
+   - `ar`: `modelo`, `modeloHero`, `poster`, `escala` (texto, por ejemplo «1:30»), `camara` (vista del adelanto), `cortes` (para «Ver interior»: nombre y altura en metros de la maqueta; si no hay, el botón se oculta), `alt` y los 3 `puntos` (ver la sección 7 para ubicarlos)
+   - `asistente`: 3 preguntas `sugeridas` y los `pasajes` con sus palabras `claves`
+5. Borra las marcas `[EJEMPLO]` y el campo `_revisar` cuando el texto esté confirmado.
+6. Corre las pruebas (`cd pruebas && npm test`) y sube los cambios.
+
+La página de la carrera, las tarjetas («3 PROYECTOS»), el carrusel del inicio y el contador «Proyectos expuestos» se actualizan solos.
 
 > Consejo: valida el JSON en **jsonlint.com** si la página deja de cargar (casi siempre es una coma de más o de menos).
 
@@ -340,7 +393,10 @@ Abrir `data/proyectos.json` y, dentro de `"proyectos"`, copiar un bloque `{ … 
 ## Créditos técnicos
 
 - Modelo 3D original de Arquitectura: [Modern Home](https://skfb.ly/6Yr8Q) por Ciolan-T. Sebastian (Sketchfab), licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). Adaptación del modelo: Diana Espinoza (interiores, mobiliario y planos); optimizado para celular.
+- Oficina Loft 18: [free Loft 18 mini office v.optimization](https://sketchfab.com/3d-models/free-loft-18-mini-office-voptimization-e434caaeaa4a4347a3c45eac6c138c30) por dasy444 (Sketchfab), licencia [Sketchfab Standard](https://sketchfab.com/licenses).
+- Rascacielos London: [[FREE] London Skyscraper](https://skfb.ly/pKVG9) por 99.Miles (Sketchfab), licencia [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - [three.js](https://threejs.org) 0.170 (licencia MIT): AR propia y modo 360°.
+- [meshoptimizer](https://github.com/zeux/meshoptimizer) 0.22 (licencia MIT): compresión de los modelos.
 - Logo de la Universidad Ecotec: propiedad de la universidad.
 
 - [model-viewer](https://modelviewer.dev) (Google, licencia Apache 2.0)

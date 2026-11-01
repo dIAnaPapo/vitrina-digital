@@ -48,7 +48,7 @@
 </div>
 
 <script type="module">
-  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, portadaDe } from './js/datos.js';
+  import { cargarDatos, leerParametro, escapar, mostrarError, iconos, portadaDe, tipoDe } from './js/datos.js';
   import { crearVisorPlanos } from './js/visor-planos.js';
   document.getElementById('logo-icono').innerHTML = iconos.ar;
 
@@ -80,8 +80,11 @@
     const pista = p.subtitulos ? `<track kind="subtitles" src="${escapar(p.subtitulos)}" srclang="es" label="Letra (español)" default>` : '';
     const video = p.video ? `<video src="${escapar(p.video)}" poster="${escapar(p.poster ?? '')}" controls playsinline preload="metadata" aria-label="Video del proyecto ${escapar(p.titulo)}">${pista}</video>` : '';
 
-    // Créditos y letra completa (si el proyecto los tiene)
-    const creditos = p.creditos ? `
+    // Créditos: una lista de { etiqueta, texto } (cualquier proyecto) o los de la canción (Cuentos y Espías)
+    const creditos = Array.isArray(p.creditos) ? `
+      <dl class="meta creditos">
+        ${p.creditos.map(c => `<div style="grid-column:1/-1"><dt>${escapar(c.etiqueta)}</dt><dd>${escapar(c.texto)}</dd></div>`).join('')}
+      </dl>` : p.creditos ? `
       <dl class="meta creditos">
         <div><dt>Letra</dt><dd>${escapar(p.creditos.letra)}</dd></div>
         <div><dt>Música</dt><dd>${escapar(p.creditos.musica)}</dd></div>
@@ -97,14 +100,17 @@
         ${cm.adaptacion ? `<p>Adaptación del modelo: ${escapar(cm.adaptacion)}.</p>` : ''}
         ${cm.cambios ? `<p>${escapar(cm.cambios)}</p>` : ''}
       </div>` : '';
-    // Planos: miniaturas que abren el visor grande con zoom
-    const planos = p.planos?.length ? `
+    // Galería (planos o páginas de un documento como el GDD): miniaturas que abren el visor grande con zoom.
+    // "galeria" = { titulo, estilo: "planos" | "documento", imagenes }. Se acepta también el campo antiguo "planos".
+    const galeria = p.galeria ?? (p.planos?.length ? { titulo: 'Planos', estilo: 'planos', imagenes: p.planos } : null);
+    const documento = galeria?.estilo === 'documento';
+    const planos = galeria?.imagenes?.length ? `
       <section class="planos" aria-labelledby="titulo-planos">
-        <h2 class="etiqueta-lateral" id="titulo-planos">Planos</h2>
-        <ul class="planos-lista">
-          ${p.planos.map((pl, i) => `
+        <h2 class="etiqueta-lateral" id="titulo-planos">${escapar(galeria.titulo ?? 'Planos')}</h2>
+        <ul class="planos-lista${documento ? ' documento' : ''}">
+          ${galeria.imagenes.map((pl, i) => `
             <li><button type="button" class="plano" data-plano="${i}" aria-label="Ver en grande: ${escapar(pl.titulo)}">
-              <img src="${escapar(pl.mini)}" alt="${escapar(pl.alt)}" loading="lazy" width="640" height="452">
+              <img src="${escapar(pl.mini)}" alt="${escapar(pl.alt)}" loading="lazy" width="640" height="${documento ? 360 : 452}">
               <span>${escapar(pl.titulo)}</span>
             </button></li>`).join('')}
         </ul>
@@ -122,7 +128,7 @@
           <div><dt>Estudiante</dt><dd>${escapar(p.estudiante)}</dd></div>
           <div><dt>Materia</dt><dd>${escapar(p.materia)}</dd></div>
           <div><dt>Periodo</dt><dd>${escapar(p.periodo)}</dd></div>
-          ${p.ar && p.ar.tipo !== 'video'
+          ${p.ar && tipoDe(p) !== 'video'
             ? `<div><dt>Escala</dt><dd>${escapar(p.ar.escala)}</dd></div>`
             : `<div><dt>Carrera</dt><dd>${escapar(carrera?.nombre)}</dd></div>`}
         </dl>
@@ -130,8 +136,8 @@
       ${video || imagenes ? `<div class="galeria">${video}${imagenes}</div>` : ''}
       ${planos}${creditos}${creditoModelo}${letra}`;
 
-    if (p.planos?.length) {
-      const visor = crearVisorPlanos(p.planos);
+    if (galeria?.imagenes?.length) {
+      const visor = crearVisorPlanos(galeria.imagenes, galeria.estilo);
       document.querySelector('.planos-lista').addEventListener('click', (e) => {
         const boton = e.target.closest('[data-plano]');
         if (boton) visor.abrir(Number(boton.dataset.plano), boton);

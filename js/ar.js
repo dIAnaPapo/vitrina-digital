@@ -9,11 +9,12 @@
 //      («busca una superficie», «toca para colocar», etc.).
 //   5. Conecta el asistente «Pregúntale a la maqueta».
 //   6. Si el proyecto es un video ("tipo": "video"), carga la pantalla de cine (ar-video.js).
-//   7. Si es una maqueta: adelanto 3D limitado + «Ver en mi espacio» con la AR propia
-//      (ar-propia.js) y, como red de seguridad, la AR de model-viewer o Quick Look.
+//   7. Si es una maqueta o un escenario ("tipo": "maqueta" / "escenario"): adelanto 3D
+//      limitado + «Ver en mi espacio» con la AR propia (ar-propia.js) y, como red de
+//      seguridad, la AR de model-viewer o Quick Look.
 // =========================================================
 
-import { cargarDatos, leerParametro } from './datos.js';
+import { cargarDatos, leerParametro, tipoDe, palabrasObjeto } from './datos.js';
 import { responder } from './asistente.js';
 import { registrar } from './metricas.js';
 import { URL_PUBLICA } from './config.js';
@@ -46,14 +47,25 @@ try {
   throw e;   // detiene el resto del script
 }
 
-const esVideo = proyecto.ar.tipo === 'video';
-const esMaqueta = !esVideo;
+const tipo = tipoDe(proyecto);
+const esVideo = tipo === 'video';
+const esMaqueta = !esVideo;                 // maqueta o escenario: usan la misma AR propia
+const objeto = palabrasObjeto(tipo);        // «la maqueta» / «el escenario»
+if (tipo === 'escenario') renombrarTextos(document.body);
+
+/** En los escenarios, los textos fijos de la página dicen «el escenario» en vez de «la maqueta». */
+function renombrarTextos(raiz) {
+  const cambiar = (t) => t.replaceAll('a la maqueta', 'al escenario').replaceAll('la maqueta', 'el escenario');
+  const caminante = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT);
+  while (caminante.nextNode()) caminante.currentNode.nodeValue = cambiar(caminante.currentNode.nodeValue);
+  raiz.querySelectorAll('[aria-label]').forEach(n => n.setAttribute('aria-label', cambiar(n.getAttribute('aria-label'))));
+}
 
 document.title = `${proyecto.titulo} en AR · Vitrina Digital Ecotec`;
 document.getElementById('titulo').textContent = proyecto.titulo;
 document.getElementById('escala').textContent = esVideo
   ? `Pantalla de cine · ${proyecto.ar.escala}`
-  : `Maqueta · escala ${proyecto.ar.escala}`;
+  : `${objeto.nombre} · escala ${proyecto.ar.escala}`;
 document.getElementById('volver').href = `proyecto.html?id=${encodeURIComponent(proyecto.id)}`;
 
 // ---------------------------------------------------------
@@ -133,7 +145,7 @@ function avisarAdelanto(punto) {
   resaltar(punto.id);
   document.getElementById('info-tipo').textContent = 'Adelanto';
   document.getElementById('info-titulo').textContent = punto.titulo;
-  document.getElementById('info-texto').textContent = 'Disponible en «Ver en mi espacio»: entra para recorrer la maqueta y leer este punto.';
+  document.getElementById('info-texto').textContent = `Disponible en «Ver en mi espacio»: entra para recorrer ${objeto.la} y leer este punto.`;
   asistente.hidden = true;
   tarjeta.hidden = false;
 }
@@ -186,7 +198,7 @@ visor.addEventListener('ar-status', (e) => {
     case 'object-placed':            // la maqueta ya está sobre la mesa
       mostrarEstado(esVideo
         ? 'Pantalla colocada. Toca ▶ para reproducir el video. Arrastra para moverla y pellizca para cambiar su tamaño.'
-        : 'Maqueta colocada. Camina alrededor y toca los puntos numerados. Arrastra para moverla y pellizca para cambiar su tamaño.', 6000);
+        : `${objeto.nombre} colocad${objeto.a}. Camina alrededor y toca los puntos numerados. Arrastra para moverl${objeto.a} y pellizca para cambiar su tamaño.`, 6000);
       break;
     case 'not-presenting':           // salió de la AR
       enAR = false;
@@ -195,7 +207,7 @@ visor.addEventListener('ar-status', (e) => {
       break;
     case 'failed':
       enAR = false;
-      mostrarEstado('No se pudo abrir la AR en este celular. Puedes seguir viendo la maqueta en 3D.', 6000);
+      mostrarEstado(`No se pudo abrir la AR en este celular. Puedes seguir viendo ${objeto.la} en 3D.`, 6000);
       break;
   }
 });
@@ -311,7 +323,7 @@ if (esMaqueta) {
     try {
       const { crearARPropia } = await import('./ar-propia.js');
       arPropia = crearARPropia({
-        proyecto, modoPrueba, registrar,
+        proyecto, modoPrueba, registrar, objeto,
         capa: document.getElementById('capa-ar'),
         compartidos: [tarjeta, asistente, botonAsistente],
         alTocarPunto: (id) => abrirPunto(id),
@@ -333,7 +345,7 @@ if (esMaqueta) {
       entrar.hidden = false;
     } else {
       // Computadora (o celular sin AR): adelanto + QR para abrirla en el celular
-      document.getElementById('aviso-sin-ar').textContent = 'Estás viendo un adelanto en 3D. Para recorrer la maqueta en tu espacio, ábrela en tu celular.';
+      document.getElementById('aviso-sin-ar').textContent = `Estás viendo un adelanto en 3D. Para recorrer ${objeto.la} en tu espacio, ábrel${objeto.a} en tu celular.`;
       document.getElementById('aviso-sin-ar').hidden = false;
       mostrarQR();
     }
@@ -350,7 +362,7 @@ if (esMaqueta) {
     }
     if (esIOS) { document.getElementById('ayuda-ios').hidden = false; document.getElementById('ayuda-ios-abrir').focus(); return; }
     if (visor.canActivateAR) visor.activateAR();
-    else mostrarEstado('Este dispositivo no puede abrir la AR. Puedes seguir viendo la maqueta en 3D.', 5000);
+    else mostrarEstado(`Este dispositivo no puede abrir la AR. Puedes seguir viendo ${objeto.la} en 3D.`, 5000);
   });
 
   // iPhone: explicación de los gestos de Quick Look antes de abrirlo

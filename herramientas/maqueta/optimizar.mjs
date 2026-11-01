@@ -1,66 +1,159 @@
 // =========================================================
-// optimizar.mjs — prepara el modelo de Arquitectura para el celular
+// optimizar.mjs — prepara un modelo 3D para el celular
 //
-// Uso:  cd herramientas/maqueta  →  npm install  →
-//       node optimizar.mjs ruta/al/original.glb ../../modelos/casa-moderna.glb 25
+// Uso directo (como con «Casa Moderna»):
+//   cd herramientas/maqueta  →  npm install  →
+//   node optimizar.mjs ruta/al/original.glb ../../modelos/casa-moderna.glb 25
+// Para los demás proyectos, con sus recetas: node preparar.mjs (ver ese archivo).
 //
 // Qué hace, en orden:
 //   1. Pasa el modelo (en metros reales) a MAQUETA: lo centra, deja la base en y = 0
-//      y lo divide por la escala (25 → maqueta 1:25 de unos 59 cm de ancho).
-//   2. Reduce las «llamadas de dibujo» (lo que más pone lento a un celular):
+//      y lo divide por la escala (25 → maqueta 1:25).
+//   2. Quita lo que no aporta (nodos por nombre, luces, cámaras) y, si se pide,
+//      simplifica SOLO las piezas chicas (comida, adornos), nunca muros ni pisos.
+//   3. Reduce las «llamadas de dibujo» (lo que más pone lento a un celular):
 //      une materiales de color liso en una paleta (palette) y junta las mallas
-//      que comparten material (join). El modelo ya es liviano en triángulos,
-//      así que NO se simplifica: el interior queda intacto.
-//   3. Pasa las texturas a WebP (máx. 1024 px; las chicas se quedan como están).
-//   4. Sin compresión Draco/meshopt: el archivo queda chico y así el celular
-//      no tiene que descargar un decodificador antes de mostrarlo.
+//      que comparten material (join).
+//   4. Pasa las texturas a WebP (máx. 1024 px).
+//   5. Opcional: compresión meshopt (el archivo pesa mucho menos; three.js y
+//      model-viewer la leen con un decodificador chiquito).
 // =========================================================
 import { NodeIO } from '@gltf-transform/core';
 import { ALL_EXTENSIONS, EXTTextureWebP } from '@gltf-transform/extensions';
-import { dedup, prune, weld, flatten, join, palette, getBounds } from '@gltf-transform/functions';
+import { dedup, prune, weld, weldPrimitive, flatten, join, palette, getBounds, simplifyPrimitive, meshopt } from '@gltf-transform/functions';
+import { MeshoptSimplifier, MeshoptEncoder, MeshoptDecoder } from 'meshoptimizer';
 import sharp from 'sharp';
 import { statSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const [, , entrada, salida, escala = '25'] = process.argv;
-const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
-const doc = await io.read(entrada);
-const raiz = doc.getRoot();
-const escena = raiz.getDefaultScene();
+const io = new NodeIO().registerExtensions(ALL_EXTENSIONS)
+  .registerDependencies({ 'meshopt.decoder': MeshoptDecoder, 'meshopt.encoder': MeshoptEncoder });
 
-function medir(titulo) {
-  let tri = 0;
-  for (const m of raiz.listMeshes()) for (const p of m.listPrimitives()) tri += (p.getIndices()?.getCount() ?? p.getAttribute('POSITION').getCount()) / 3;
-  const primitivas = raiz.listMeshes().reduce((n, m) => n + m.listPrimitives().length, 0);
-  console.log(`${titulo}: ${Math.round(tri)} triángulos · ${primitivas} llamadas de dibujo · ${raiz.listMaterials().length} materiales · ${raiz.listTextures().length} texturas`);
+/** Triángulos y llamadas de dibujo que se dibujan de verdad (una malla usada 3 veces cuenta 3), materiales y texturas. */
+export function medir(doc) {
+  const raiz = doc.getRoot();
+  let triangulos = 0, llamadas = 0;
+  raiz.getDefaultScene().traverse(n => {
+    for (const p of n.getMesh()?.listPrimitives() ?? []) {
+      llamadas++;
+      triangulos += (p.getIndices()?.getCount() ?? p.getAttribute('POSITION').getCount()) / 3;
+    }
+  });
+  return { triangulos: Math.round(triangulos), llamadas, materiales: raiz.listMaterials().length, texturas: raiz.listTextures().length };
 }
-medir('ANTES');
+const texto = (m) => `${m.triangulos} triángulos · ${m.llamadas} llamadas de dibujo · ${m.materiales} materiales · ${m.texturas} texturas`;
 
-// 1. Maqueta: centrada, base en y = 0, dividida por la escala
-const b = getBounds(escena);
-const s = 1 / Number(escala);
-const cx = (b.min[0] + b.max[0]) / 2, cz = (b.min[2] + b.max[2]) / 2;
-const maqueta = doc.createNode('maqueta').setScale([s, s, s]).setTranslation([-cx * s, -b.min[1] * s, -cz * s]);
-for (const hijo of escena.listChildren()) { escena.removeChild(hijo); maqueta.addChild(hijo); }
-escena.addChild(maqueta);
-const b2 = getBounds(escena);
-console.log(`Maqueta 1:${escala}: ${(b2.max[0] - b2.min[0]).toFixed(3)} × ${(b2.max[1] - b2.min[1]).toFixed(3)} × ${(b2.max[2] - b2.min[2]).toFixed(3)} m · base y=${b2.min[1].toFixed(4)}`);
-console.log(`Centro original (para convertir coordenadas reales): x=${cx.toFixed(3)} z=${cz.toFixed(3)} · y mínima=${b.min[1].toFixed(3)}`);
+/**
+ * @param {object} o
+ *   entrada, salida   rutas de los .glb
+ *   escala            1:escala (25 → maqueta 1:25)
+ *   quitar            RegExp: nodos que se borran (techo, cielo, colisiones…)
+ *   simplificar       { nodos: RegExp, ratio: 0.5, error: 0.002 } → solo esas piezas
+ *   simplificarTodo   { ratio, error, planas } → todo el modelo (para la versión liviana del carrusel)
+ *                     planas: true = sin normales (caras planas), para poder soldar y simplificar más
+ *   maxTextura        lado máximo de las texturas (1024)
+ *   soloColor         true = quita mapas de normales, rugosidad, oclusión y barniz (deja color y brillo propio)
+ *   meshopt           true = compresión meshopt
+ *   antes(doc)        función opcional para pasos propios (por ejemplo, cambiar texturas)
+ */
+export async function optimizar(o) {
+  const { entrada, salida, escala = 1, quitar, simplificar, simplificarTodo, maxTextura = 1024, antes } = o;
+  const doc = await io.read(entrada);
+  const raiz = doc.getRoot();
+  const escena = raiz.getDefaultScene();
+  const inicio = medir(doc);
+  console.log(`ANTES:   ${texto(inicio)}`);
 
-// 2. Menos llamadas de dibujo
-await doc.transform(dedup(), prune(), flatten(), weld(), palette({ min: 2 }), join(), dedup(), prune());
+  if (antes) await antes(doc);
 
-// 3. Texturas a WebP
-doc.createExtension(EXTTextureWebP).setRequired(true);
-for (const t of raiz.listTextures()) {
-  const img = Buffer.from(t.getImage());
-  const { width, height } = await sharp(img).metadata();
-  const k = Math.min(1, 1024 / Math.max(width, height));
-  const webp = await sharp(img).resize(Math.round(width * k), Math.round(height * k), { fit: 'fill', kernel: 'lanczos3' })
-    .webp({ quality: 82, effort: 5 }).toBuffer();
-  t.setImage(new Uint8Array(webp)).setMimeType('image/webp');
-  if (t.getURI()) t.setURI(t.getURI().replace(/\.\w+$/, '.webp'));
+  // Solo color: a escala de maqueta los mapas de relieve no se notan (y la AR propia no los usa)
+  if (o.soloColor) {
+    for (const m of raiz.listMaterials()) {
+      m.setNormalTexture(null).setOcclusionTexture(null).setMetallicRoughnessTexture(null);
+      m.setExtension('KHR_materials_clearcoat', null).setExtension('KHR_materials_specular', null);
+    }
+  }
+
+  // Quitar nodos que no aportan, luces y cámaras
+  if (quitar) {
+    const borrar = [];
+    escena.traverse(n => { if (quitar.test(n.getName())) borrar.push(n); });
+    borrar.forEach(n => n.dispose());
+    console.log(`Quitados ${borrar.length} nodos (${quitar})`);
+  }
+  escena.traverse(n => { n.setExtension('KHR_lights_punctual', null); n.setCamera(null); });
+  raiz.listExtensionsUsed().filter(e => e.extensionName === 'KHR_lights_punctual').forEach(e => e.dispose());
+
+  // 1. Maqueta: centrada, base en y = 0, dividida por la escala
+  const b = getBounds(escena);
+  const s = 1 / Number(escala);
+  const cx = (b.min[0] + b.max[0]) / 2, cz = (b.min[2] + b.max[2]) / 2;
+  const maqueta = doc.createNode('maqueta').setScale([s, s, s]).setTranslation([-cx * s, -b.min[1] * s, -cz * s]);
+  for (const hijo of escena.listChildren()) { escena.removeChild(hijo); maqueta.addChild(hijo); }
+  escena.addChild(maqueta);
+  const b2 = getBounds(escena);
+  const medidas = [0, 1, 2].map(i => b2.max[i] - b2.min[i]);
+  console.log(`Maqueta 1:${escala}: ${medidas.map(v => v.toFixed(3)).join(' × ')} m · base y=${b2.min[1].toFixed(4)}`);
+  console.log(`Centro original: x=${cx.toFixed(3)} z=${cz.toFixed(3)} · y mínima=${b.min[1].toFixed(3)}`);
+
+  // 2. Simplificar solo piezas chicas (antes de unirlas)
+  await doc.transform(dedup(), prune(), weld());
+  await MeshoptSimplifier.ready;
+  // Una malla usada por varios nodos se simplifica una sola vez
+  const hechas = new Set();
+  const simplificarUna = (p, opciones) => { if (!hechas.has(p)) { hechas.add(p); simplifyPrimitive(p, { simplifier: MeshoptSimplifier, ...opciones }); } };
+  if (simplificar) {
+    let n = 0;
+    escena.traverse(nodo => {
+      if (!nodo.getMesh() || !simplificar.nodos.test(nodo.getName())) return;
+      for (const p of nodo.getMesh().listPrimitives()) {
+        // Piezas «low poly» con caras planas: cada triángulo tiene sus vértices propios y no se pueden unir.
+        // Sin normales se pueden soldar y simplificar; el visor las vuelve a sombrear con caras planas.
+        if (simplificar.planas && !hechas.has(p)) { p.setAttribute('NORMAL', null); weldPrimitive(p); }
+        simplificarUna(p, { ratio: simplificar.ratio, error: simplificar.error ?? 0.02 });
+      }
+      n++;
+    });
+    console.log(`Simplificadas ${n} piezas chicas (${simplificar.nodos}, ratio ${simplificar.ratio})`);
+  }
+  if (simplificarTodo) {
+    for (const m of raiz.listMeshes()) for (const p of m.listPrimitives()) {
+      if (simplificarTodo.planas && !hechas.has(p)) { p.setAttribute('NORMAL', null); weldPrimitive(p); }
+      simplificarUna(p, { ratio: simplificarTodo.ratio, error: simplificarTodo.error ?? 0.01 });
+    }
+  }
+
+  // 3. Menos llamadas de dibujo
+  await doc.transform(dedup(), prune(), flatten(), palette({ min: 2 }), join(), dedup(), prune());
+
+  // 4. Texturas a WebP
+  doc.createExtension(EXTTextureWebP).setRequired(true);
+  for (const t of raiz.listTextures()) {
+    const img = Buffer.from(t.getImage());
+    const { width, height } = await sharp(img).metadata();
+    const k = Math.min(1, maxTextura / Math.max(width, height));
+    const webp = await sharp(img).resize(Math.max(1, Math.round(width * k)), Math.max(1, Math.round(height * k)), { fit: 'fill', kernel: 'lanczos3' })
+      .webp({ quality: 82, effort: 5 }).toBuffer();
+    t.setImage(new Uint8Array(webp)).setMimeType('image/webp');
+    if (t.getURI()) t.setURI(t.getURI().replace(/\.\w+$/, '.webp'));
+  }
+
+  // 5. Compresión meshopt (opcional)
+  if (o.meshopt) {
+    await MeshoptEncoder.ready;
+    await doc.transform(meshopt({ encoder: MeshoptEncoder, level: 'medium' }));
+  }
+
+  const fin = medir(doc);
+  console.log(`DESPUÉS: ${texto(fin)}`);
+  await io.write(salida, doc);
+  const pesos = [statSync(entrada).size, statSync(salida).size];
+  console.log(`Peso: ${(pesos[0] / 1024).toFixed(0)} KB → ${(pesos[1] / 1024).toFixed(0)} KB`);
+  return { inicio, fin, pesos, medidas };
 }
 
-medir('DESPUÉS');
-await io.write(salida, doc);
-console.log(`Peso: ${(statSync(entrada).size / 1024).toFixed(0)} KB → ${(statSync(salida).size / 1024).toFixed(0)} KB`);
+// Uso directo por línea de comandos
+if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const [, , entrada, salida, escala = '25'] = process.argv;
+  await optimizar({ entrada, salida, escala: Number(escala) });
+}
