@@ -3,7 +3,7 @@
 // 1. Adelanto en computadora: giro limitado, sin zoom, puntos «Disponible en…», QR.
 // 2. iPhone: los puntos se leen completos en 3D (Quick Look no los muestra).
 // 3. AR propia en MODO DE PRUEBA (?arprueba=1, sin cámara): tutorial, colocar,
-//    girar con un dedo, botones, «Ver interior», escala 1:1, doble toque, salir.
+//    girar con un dedo, botones, «Ver interior», doble toque, panel ?debug=1, salir.
 // 4. Ficha: etiqueta «Proyecto de ejemplo», créditos y visor de planos con zoom.
 // Correr: cd pruebas → npm test
 // =========================================================
@@ -69,14 +69,18 @@ test('iPhone: los puntos se leen completos en la vista 3D', async () => {
   await contexto.close();
 });
 
-test('AR propia (modo de prueba): tutorial, colocar, gestos, botones, interior, 1:1 y salir', async () => {
-  const { pagina, contexto, errores } = await abrir(`ar.html?id=${ID}&arprueba=1`, {
+test('AR propia (modo de prueba): tutorial, colocar, gestos, botones, interior, diagnóstico y salir', async () => {
+  const { pagina, contexto, errores } = await abrir(`ar.html?id=${ID}&arprueba=1&debug=1`, {
     viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2
   });
   await pagina.waitForFunction(() => window.vitrina?.arPropia, null, { timeout: 30000 });
   await pagina.locator('#ver-en-mi-espacio').click();
   await pagina.locator('#capa-ar').waitFor({ state: 'visible' });
   const e = () => pagina.evaluate(() => window.vitrina.arPropia.estado());
+
+  // El visor de la página se oculta (deja de dibujar) y ya no hay selector de tamaño (1:1 descartado)
+  assert.equal(await pagina.locator('#visor').isHidden(), true);
+  assert.equal(await pagina.locator('[data-ar="real"], [data-ar="maqueta"]').count(), 0);
 
   // Tutorial: aparece siempre, paso 1
   assert.equal(await pagina.locator('#ar-tutorial').isVisible(), true);
@@ -128,14 +132,9 @@ test('AR propia (modo de prueba): tutorial, colocar, gestos, botones, interior, 
   assert.equal(await pagina.locator('#capa-ar #tarjeta-info').isVisible(), true);
   await pagina.click('#cerrar-info');
 
-  // Escala real 1:1: hay que volver a colocar
-  await pagina.click('[data-ar="real"]');
-  assert.equal((await e()).colocada, false);
-  assert.match(await pagina.locator('#ar-estado').textContent(), /piso|Escala real/);
-  await pagina.mouse.click(195, 420);
-  await pagina.waitForTimeout(300);
-  assert.equal((await e()).escala, 25);
-  await pagina.click('[data-ar="maqueta"]');
+  // Modo diagnóstico (?debug=1): FPS, llamadas y triángulos en pantalla
+  await pagina.waitForTimeout(700);
+  assert.match(await pagina.locator('.ar-diagnostico').textContent(), /FPS \d+[\s\S]*Llamadas \d+ · Triángulos \d+/);
 
   // ? vuelve a mostrar el tutorial
   await pagina.click('[data-ar="ayuda"]');
@@ -144,6 +143,7 @@ test('AR propia (modo de prueba): tutorial, colocar, gestos, botones, interior, 
   // Salir: todo vuelve a su lugar
   await pagina.click('[data-ar="salir"]');
   assert.equal(await pagina.locator('#capa-ar').isHidden(), true);
+  assert.equal(await pagina.locator('#visor').isVisible(), true);
   assert.equal(await pagina.evaluate(() => document.getElementById('tarjeta-info').parentElement.id), 'visor');
   assert.deepEqual(errores, []);
   await contexto.close();

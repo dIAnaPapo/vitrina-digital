@@ -7,7 +7,6 @@
 // Qué hace, en orden:
 //   1. Pasa el modelo (en metros reales) a MAQUETA: lo centra, deja la base en y = 0
 //      y lo divide por la escala (25 → maqueta 1:25 de unos 59 cm de ancho).
-//      La AR propia lo vuelve a multiplicar ×25 para «Escala real 1:1».
 //   2. Reduce las «llamadas de dibujo» (lo que más pone lento a un celular):
 //      une materiales de color liso en una paleta (palette) y junta las mallas
 //      que comparten material (join). El modelo ya es liviano en triángulos,

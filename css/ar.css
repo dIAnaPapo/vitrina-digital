@@ -290,7 +290,12 @@ body.cine-abierto { overflow: hidden; }
 .ar-prueba-lienzo { position: fixed; inset: 0; z-index: 69; background: radial-gradient(ellipse at 50% 40%, #fff, var(--hielo) 70%); }
 .ar-gestos { position: absolute; inset: 0; touch-action: none; }
 .ar-puntos { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
-.ar-puntos .punto { position: absolute; left: 0; top: 0; pointer-events: auto; }
+/* Dentro de la AR el punto se mueve con transform en cada cuadro: sin transición de transform
+   (si no, el navegador reinicia una animación 30 veces por segundo y el punto queda atrás) */
+.ar-puntos .punto { position: absolute; left: 0; top: 0; pointer-events: auto; transition: background .2s, opacity .3s; will-change: transform; }
+.ar-puntos .punto.activo { scale: 1.2; }
+/* Mientras dura la AR propia, el visor de la página se oculta: así deja de dibujar por detrás */
+.ar-propia-activa #visor, .ar-propia-activa .barra-ar, .ar-propia-activa .aviso-sin-ar { display: none; }
 
 .ar-arriba {
   position: absolute; left: 0; right: 0; top: 0; z-index: 3;
@@ -336,19 +341,16 @@ body.cine-abierto { overflow: hidden; }
 .ar-compartidos { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
 .ar-compartidos > * { pointer-events: auto; }
 .capa-ar .tarjeta-info, .capa-ar .asistente { bottom: calc(150px + env(safe-area-inset-bottom)); }
-.capa-ar .boton-asistente { bottom: calc(150px + env(safe-area-inset-bottom)); }
+.capa-ar .boton-asistente {
+  bottom: calc(150px + env(safe-area-inset-bottom));
+  background: rgba(6, 98, 174, .92); -webkit-backdrop-filter: none; backdrop-filter: none;   /* desenfocar la cámara cuesta mucho */
+}
 
-/* Barras de abajo: tamaños + botones grandes */
+/* Barra de abajo: botones grandes */
 .ar-abajo {
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;
   display: grid; justify-items: center; gap: 8px; padding: 0 10px calc(12px + env(safe-area-inset-bottom));
 }
-.ar-tamanos { display: flex; gap: 4px; padding: 4px; border-radius: 999px; background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .25); }
-.ar-tamanos button {
-  min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; cursor: pointer; white-space: nowrap;
-  background: transparent; color: var(--azul); font: 600 13px var(--texto);
-}
-.ar-tamanos button[aria-pressed="true"] { background: var(--azul); color: #fff; }
 .ar-barra {
   display: flex; gap: 4px; width: 100%; max-width: 520px; padding: 6px; border-radius: 22px;
   background: rgba(255, 255, 255, .94); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
@@ -382,7 +384,7 @@ body.cine-abierto { overflow: hidden; }
 
 /* Modo diagnóstico de la AR propia (?debug=1): FPS, llamadas, triángulos, memoria */
 .ar-diagnostico {
-  position: absolute; left: 8px; top: calc(68px + env(safe-area-inset-top)); z-index: 6; margin: 0;
+  position: absolute; left: 8px; top: calc(178px + env(safe-area-inset-top)); z-index: 6; margin: 0;
   padding: 6px 8px; border-radius: 8px; pointer-events: none; white-space: pre;
   background: rgba(0, 0, 0, .7); color: #8CF5A8; font: 11px/1.35 ui-monospace, Menlo, Consolas, monospace;
 }

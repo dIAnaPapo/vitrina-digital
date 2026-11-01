@@ -152,6 +152,7 @@ vitrina-digital/
     ├── carrusel.js     ← carrusel de proyectos del hero
     ├── ar.js           ← lógica de la AR: modelo, puntos, guía, asistente
     ├── ar-propia.js    ← «Ver en mi espacio» de la maqueta con three.js + WebXR (gestos, botones, tutorial)
+    ├── diagnostico.js  ← panel ?debug=1 de la AR propia (FPS, llamadas, triángulos, memoria)
     ├── visor-planos.js ← galería de planos con visor grande y zoom
     ├── ar-video.js     ← pantalla de cine: video, sonido, controles, pantalla completa y modos
     ├── cine-360.js     ← modo 360° «cine curvo» (three.js, giroscopio)
@@ -231,23 +232,39 @@ En Android con Chrome se usa una **AR propia con three.js + WebXR**: en la AR de
 | Gesto / botón | Qué hace |
 |---|---|
 | 1 dedo arrastrando | Gira la maqueta sobre su eje (no la mueve de lugar) |
-| 2 dedos pellizcando | Agranda / achica (solo en «Maqueta») |
+| 2 dedos pellizcando | Agranda / achica |
 | 2 dedos arrastrando | Mueve la maqueta sobre la mesa |
 | Doble toque | Vuelve al tamaño y la posición de colocación |
 | ⟲ ⟳ | Gira 45° con animación |
 | − + | Achica / agranda |
 | ⊙ Centrar | Lleva la maqueta al punto de la mesa al que apuntas |
 | 🏠 Ver interior | Completa → **Sin techo** → **Planta baja**: un corte horizontal a la altura de cada losa (`ar.cortes` en el JSON) |
-| Maqueta 1:25 / Escala real 1:1 | En 1:1 la casa mide 14,8 m: apunta al piso, colócala y camina dentro |
 | ✕ Salir · ? | Salir · volver a ver el tutorial |
 
-- **Inicio rápido:** three.js y el modelo se **precargan** mientras la persona mira el adelanto. Al entrar aparece «Buscando superficie…», luego una **retícula con la sombra de la casa** donde va a quedar, y un toque la coloca.
+- **Solo tamaño «Maqueta» (1:25).** La «Escala real 1:1» se **descartó tras la prueba en el celular, por rendimiento** (Ronda 3 · Bloque E): con la casa de 14,8 m la página se trababa. Para verla más grande: pellizcar o «+» (hasta ×4) y acercarse caminando.
+- **Inicio rápido:** three.js, el modelo, los shaders y las texturas se **preparan mientras la persona mira el adelanto**, antes de abrir la cámara. Al entrar aparece «Buscando superficie…», luego una **retícula con la sombra de la casa** donde va a quedar, y un toque la coloca.
 - **Tutorial de 3 pasos**, siempre al entrar: avanza solo cada 3 s o con un toque, tiene «Ocultar tutorial» en la esquina y «?» para volver a verlo. Registra `tutorial_ocultado` con el paso.
 - Los puntos 1-2-3 siguen a la maqueta y se ven tenues si una pared los tapa; con «Ver interior» desaparecen los que quedan sobre el corte. La tarjeta y el asistente funcionan dentro de la AR.
 - **Red de seguridad:** si el celular no soporta WebXR con hit-test y DOM overlay, o si algo falla al iniciar, se abre **automáticamente la AR de model-viewer**.
 - **Interruptor para la presentación:**
   - `"configuracion": { "arPropia": false }` en `data/proyectos.json` usa siempre la AR anterior (el admin lo podrá cambiar en la Fase 5);
   - o abre `ar.html?id=casa-moderna&ar=clasica` para forzarla solo en ese celular.
+#### Fluidez en celulares de gama media (Ronda 3 · Bloque E)
+Meta: 60 fps (mínimo 30 estables). El modelo ya era liviano (12 384 triángulos, 6 llamadas de dibujo), así que la lentitud venía de **cómo** se dibujaba:
+
+| Qué se cambió | Por qué |
+|---|---|
+| El visor 3D de la página se **oculta** durante la AR | Seguía girando y dibujando por detrás: eran dos motores 3D compitiendo por la GPU |
+| La AR se dibuja al **75 % de la resolución** (`framebufferScaleFactor`) | 44 % menos píxeles; con antialias no se nota borroso |
+| Materiales **Lambert** + 2 luces, sin mapa de entorno (exposición 1,3 para compensar) | Los PBR con reflejos son lo más caro por píxel |
+| Caras de un solo lado y **sin plano de corte** salvo en «Ver interior»; los materiales del corte se preparan una vez | Antes todo se dibujaba por las dos caras y con corte, aunque no se usara |
+| Sin `light-estimation` y **hit-test apagado** al colocar | El celular dejaba de buscar la mesa en cada cuadro |
+| Puntos 1-2-3: `translate3d` cada 2 cuadros, **sin transición CSS**, sin leer el layout; revisa paredes de a un punto | La transición se reiniciaba en cada cuadro y el punto quedaba atrás |
+| Botón del asistente sin desenfoque (`backdrop-filter`) en la AR | Desenfocar la cámara en cada cuadro es carísimo |
+| Cero objetos nuevos por cuadro; shaders (`compileAsync`) y texturas (`initTexture`) listos antes de la cámara | Sin tirones del recolector de basura ni al colocar |
+
+**Modo diagnóstico:** agrega `&debug=1` a la dirección (`ar.html?id=casa-moderna&debug=1`). Muestra FPS, tiempo por cuadro, JS por cuadro, llamadas, triángulos, memoria, resolución y los segundos hasta detectar la mesa y colocar la maqueta. Con `debug=1` también se puede probar `&res=0.6` (menos resolución) o `&aa=0` (sin antialias). En la compu: `cd pruebas && node rendimiento.mjs` (la CPU va 4 veces más lenta para parecerse a un celular, pero la GPU es la de la compu: los FPS reales se miden en el celular).
+
 - **iPhone:** Quick Look (AR de Apple). Antes de abrirlo aparece una hoja con sus gestos (arrastrar, girar con dos dedos, pellizcar, cambiar entre «AR» y «Objeto»).
 - **Modo de prueba en la computadora:** `ar.html?id=casa-moderna&arprueba=1` abre la misma experiencia sin cámara, con el mouse. Lo usan las pruebas automáticas.
 
@@ -270,6 +287,7 @@ En Android con Chrome se usa una **AR propia con three.js + WebXR**: en la AR de
 
 ### Pruebas automáticas (carpeta `pruebas/`)
 - `npm test` corre `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
+- `node rendimiento.mjs` mide la AR propia (modo de prueba) con el panel de diagnóstico.
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR

@@ -107,7 +107,6 @@
         "poster": "img/casa-moderna-render.webp",
         "modeloIOS": "",
         "escala": "1:25",
-        "escalaNumero": 25,
         "camara": "25deg 62deg 80%",
         "cortes": [
           {
