@@ -17,7 +17,7 @@ import jsQR from 'jsqr';
 import { levantarServidor } from './servidor.mjs';
 import { URL_PUBLICA, urlDeLaPlaca } from '../js/config.js';
 
-const ESPERADA = 'https://dianapapo.github.io/vitrina-digital/index.html?src=qr';
+const ESPERADA = 'https://vitrina-digital-ecotec.github.io/index.html?src=qr';
 let servidor, navegador, pagina;
 const erroresConsola = [];
 
@@ -46,9 +46,9 @@ after(async () => {
 });
 
 test('config.js tiene la URL pública correcta', () => {
-  assert.equal(URL_PUBLICA, 'https://dianapapo.github.io/vitrina-digital/');
+  assert.equal(URL_PUBLICA, 'https://vitrina-digital-ecotec.github.io/');
   assert.equal(urlDeLaPlaca('qr'), ESPERADA);
-  assert.equal(urlDeLaPlaca('nfc'), 'https://dianapapo.github.io/vitrina-digital/index.html?src=nfc');
+  assert.equal(urlDeLaPlaca('nfc'), 'https://vitrina-digital-ecotec.github.io/index.html?src=nfc');
 });
 
 test('el QR de la pantalla apunta a la URL pública (aunque la placa se abra en local)', async () => {

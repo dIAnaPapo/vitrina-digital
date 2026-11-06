@@ -52,7 +52,7 @@ test('adelanto en computadora: limitado, puntos «Disponible en…» y QR a la U
   await pagina.locator('#ar-qr svg').waitFor({ timeout: 15000 });
   const png = PNG.sync.read(await pagina.locator('#ar-qr-codigo').screenshot());
   assert.equal(jsQR(new Uint8ClampedArray(png.data), png.width, png.height)?.data,
-    `https://dianapapo.github.io/vitrina-digital/ar.html?id=${ID}&src=qr`);
+    `https://vitrina-digital-ecotec.github.io/ar.html?id=${ID}&src=qr`);
   await pagina.screenshot({ path: captura('maqueta-monitor-adelanto.png') });
   assert.deepEqual(errores, []);
   await contexto.close();

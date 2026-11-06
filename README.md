@@ -190,7 +190,9 @@ El celular solo abre la cámara para AR si la página está en **HTTPS**. Dos ca
 ### Opción B — definitiva, para la placa y la prueba con usuarios (GitHub Pages, gratis)
 1. Sube la carpeta a un repositorio de GitHub (desde VS Code: ícono **Source Control → Publish to GitHub**).
 2. En GitHub: **Settings → Pages → Branch: main / root → Save**.
-3. En 1–2 minutos tendrás `https://TU-USUARIO.github.io/vitrina-digital/`. **Esa es la URL que va en la placa NFC.**
+3. En 1–2 minutos tendrás la dirección pública. **Esa es la URL que va en la placa NFC.**
+
+**Dirección actual (desde la Ronda 4):** el repositorio es `vitrina-digital-ecotec/vitrina-digital-ecotec.github.io`, de la organización de GitHub **vitrina-digital-ecotec**. Como el repositorio se llama igual que la organización + `.github.io`, el sitio se publica en la **raíz**: **https://vitrina-digital-ecotec.github.io/** (sin `/vitrina-digital/` al final). Todas las rutas del sitio son relativas (`css/…`, `modelos/…`), así que funciona igual en la raíz, en una subcarpeta o con Live Server. La dirección anterior (`dianapapo.github.io/vitrina-digital/`) ya no funciona.
 4. Cada semestre: se edita `data/proyectos.json`, se sube el cambio, y la placa sigue igual.
 
 (Netlify Drop también sirve: arrastras la carpeta a app.netlify.com/drop y te da una URL HTTPS.)
@@ -317,7 +319,7 @@ Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redac
 
 ## 8. La placa: QR (hoy) y NFC (después)
 
-**La dirección pública está en un solo lugar:** `js/config.js` → `URL_PUBLICA = 'https://dianapapo.github.io/vitrina-digital/'`.
+**La dirección pública está en un solo lugar:** `js/config.js` → `URL_PUBLICA = 'https://vitrina-digital-ecotec.github.io/'`.
 
 - **QR (método principal por ahora).** `placa.html` lo genera a partir de `URL_PUBLICA`, así que apunta al sitio publicado **aunque abras la placa en tu compu**. Abre `…/index.html?src=qr`. El `?src=qr` sirve para que las métricas (Fase 6) sepan que la visita llegó por el QR.
 - **Descargas para imprenta:** botones «Descargar QR (PNG)», de unos 2.000 px, y «Descargar QR (SVG)», vectorial. Los dos traen el margen blanco reglamentario de 4 módulos y corrección de errores media (M).
@@ -330,7 +332,7 @@ Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redac
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR
-`pruebas/qr.test.mjs` abre `placa.html` en Chrome y **decodifica** con jsQR el QR de la pantalla, el PNG y el SVG descargados. Comprueba que los tres apuntan exactamente a `https://dianapapo.github.io/vitrina-digital/index.html?src=qr`, que esa URL abre el inicio y que no hay errores en la consola.
+`pruebas/qr.test.mjs` abre `placa.html` en Chrome y **decodifica** con jsQR el QR de la pantalla, el PNG y el SVG descargados. Comprueba que los tres apuntan exactamente a `https://vitrina-digital-ecotec.github.io/index.html?src=qr`, que esa URL abre el inicio y que no hay errores en la consola.
 
 ```bash
 cd pruebas
