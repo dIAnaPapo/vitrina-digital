@@ -25,7 +25,10 @@ Los visitantes **nunca** inician sesión.
 - Mismo lenguaje visual que la referencia: hero con degradado Ecotec, titulares grandes en mayúsculas (Inter Tight), tarjeta blanca + tarjeta translúcida de datos, chips, botones circulares con flecha y tarjetas de carrera y de proyecto con imagen. Sin fondos azul oscuro.
 - Colores Ecotec definidos en `css/estilos.css` (`--azul` #0662AE, `--azul-medio` #0489C9, `--celeste` #01B3E6, `--hielo` #DEF1FF y `--degradado`). Si cambias un color ahí, cambia en todo el sitio.
 - **Responsive:** se diseñó primero para celular (una columna). Desde 900 px de ancho (monitor) aparece el marco redondeado, el menú, la maqueta en el centro del hero y las dos tarjetas de carrera lado a lado.
-- **Carrusel del hero** (`js/carrusel.js`): el visor 3D grande (~60 % del alto en celular, 560 px en monitor) va rotando entre los proyectos cada 8 s con un fundido. Mientras se ve uno, el otro visor **precarga** el siguiente. Tiene nombre y carrera (que llevan a la ficha) y puntos para elegir. Se pausa con el mouse encima o al tocarlo (10 s). Con *reducir movimiento* no cambia ni gira solo.
+- **Carrusel del hero** (`js/carrusel.js`): el visor 3D grande va rotando entre los proyectos cada 8 s con un fundido. Mientras se ve uno, el otro visor **precarga** el siguiente. Tiene nombre y carrera (que llevan a la ficha) y puntos para elegir. Con *reducir movimiento* no cambia ni gira solo.
+  - **Se gira con el dedo o el mouse** (Ronda 4): arrastre horizontal. El arrastre vertical sigue moviendo la página (`touch-action="pan-y"`). Mientras se gira, el carrusel se pausa, y retoma **4 s después de soltar**. También se pausa con el mouse encima o con el teclado (no al tocarlo: tocar le da el foco al visor y la pausa no se quitaría).
+  - **Celular:** ~60 % del alto de la pantalla y todo el ancho, con la cámara un poco más cerca (`camaraHero`) para que el modelo llene el visor.
+  - **Monitor** (Ronda 4): el visor ocupa **todo el ancho del hero, detrás de los títulos** (los textos van por encima), y su alto se ajusta a la pantalla (entre 360 y 560 px) para que el modelo, el nombre y la carrera se vean sin hacer scroll, incluso en una laptop de 1366 × 768. La distancia de la cámara es «auto»: model-viewer la calcula para que el modelo se vea **completo** desde cualquier lado mientras gira. La inclinación de cada proyecto sale de `camaraHero`.
   - El proyecto de video aparece como el televisor 3D con el **póster** en la pantalla, no con el video: así la portada no descarga 9 MB. La imagen `img/cuentos-y-espias-pantalla.webp` está **volteada verticalmente** a propósito, porque así la pide la textura.
   - Opcional por proyecto en el JSON: `ar.modeloHero` (versión liviana del modelo solo para el carrusel) y `ar.camaraHero` (encuadre).
 - **El periodo** («SEMESTRE 2 - 2026» en la tarjeta blanca) sale de un solo lugar: `data/proyectos.json` → `"periodoActual"`.
@@ -238,16 +241,18 @@ En Android con Chrome se usa una **AR propia con three.js + WebXR**: en la AR de
 | Gesto / botón | Qué hace |
 |---|---|
 | 1 dedo arrastrando | Gira la maqueta sobre su eje (no la mueve de lugar) |
-| 2 dedos pellizcando | Agranda / achica |
+| 2 dedos pellizcando | Agranda / achica (de ×0,2 a ×8; antes ×0,25 a ×4) |
 | 2 dedos arrastrando | Mueve la maqueta sobre la mesa |
 | Doble toque | Vuelve al tamaño y la posición de colocación |
 | ⟲ ⟳ | Gira 45° con animación |
-| − + | Achica / agranda |
+| − + | Achica / agranda (×1,25 por toque, mismos topes) |
 | ⊙ Centrar | Lleva la maqueta al punto de la mesa al que apuntas |
 | 🏠 Ver interior | Completa → **Sin techo** → **Planta baja**: un corte horizontal a la altura de cada losa (`ar.cortes` en el JSON) |
 | ✕ Salir · ? | Salir · volver a ver el tutorial |
 
-- **Solo tamaño «Maqueta» (1:25).** La «Escala real 1:1» se **descartó tras la prueba en el celular, por rendimiento** (Ronda 3 · Bloque E): con la casa de 14,8 m la página se trababa. Para verla más grande: pellizcar o «+» (hasta ×4) y acercarse caminando.
+- **Solo tamaño «Maqueta» (1:25).** La «Escala real 1:1» se **descartó tras la prueba en el celular, por rendimiento** (Ronda 3 · Bloque E): con la casa de 14,8 m la página se trababa. Para verla más grande: pellizcar o «+» (hasta ×8) y acercarse caminando.
+- **Acercarse sin que se corte** (Ronda 4): la cámara dibuja desde **1 cm** («near» = 0,01 m; WebXR usa 10 cm si no se le indica). three.js copia el near de la cámara a la sesión WebXR (`depthNear`) y lo reinicia en cada sesión: se revisó en el código de three.js 0.170. Lo comprueba `proyectos.test.mjs` en los 5 modelos.
+- **Los 5 modelos (maquetas y escenarios) usan exactamente la misma AR**: mismos gestos, botones, tutorial, retícula y puntos; solo cambian los textos («la maqueta» / «el escenario»).
 - **Inicio rápido:** three.js, el modelo, los shaders y las texturas se **preparan mientras la persona mira el adelanto**, antes de abrir la cámara. Al entrar aparece «Buscando superficie…», luego una **retícula con la sombra de la casa** donde va a quedar, y un toque la coloca.
 - **Encontrar la mesa más rápido:** la búsqueda (hit-test) empieza apenas se abre la cámara, aunque el tutorial esté visible, y acepta **planos y también puntos sueltos** de ARCore (`entityTypes: ['plane', 'point']`), que aparecen mucho antes que un plano completo. El primer paso del tutorial aconseja «Apunta a una superficie con textura y buena luz».
 - **«📍 Colocar aquí»:** si a los 6 s no se encontró ninguna superficie, aparece este botón. Pone la maqueta unos 60 cm frente a la cámara, sobre un plano estimado (45 cm por debajo del celular). La búsqueda sigue: si después aparece la mesa, el aviso invita a tocar **⊙ Centrar**, que la apoya en ella.
@@ -271,7 +276,35 @@ Meta: 60 fps (mínimo 30 estables). El modelo ya era liviano (12 384 triángulos
 | Botón del asistente sin desenfoque (`backdrop-filter`) en la AR | Desenfocar la cámara en cada cuadro es carísimo |
 | Cero objetos nuevos por cuadro; shaders (`compileAsync`) y texturas (`initTexture`) listos antes de la cámara | Sin tirones del recolector de basura ni al colocar |
 
-**Modo diagnóstico:** agrega `&debug=1` a la dirección (`ar.html?id=casa-moderna&debug=1`). Muestra FPS, tiempo por cuadro, JS por cuadro, llamadas, triángulos, memoria, resolución y los segundos (contados desde el toque en «Ver en mi espacio») hasta ver la cámara, detectar la mesa y colocar la maqueta; si se usó «Colocar aquí», lo indica. Con `debug=1` también se puede probar `&res=0.6` (menos resolución) o `&aa=0` (sin antialias). En la compu: `cd pruebas && node rendimiento.mjs` (la CPU va 4 veces más lenta para parecerse a un celular, pero la GPU es la de la compu: los FPS reales se miden en el celular).
+#### Fluidez de los 6 modelos (Ronda 4)
+Meta: **60 FPS estables** en un Infinix HOT 60 Pro+ (Helio G200) con todos los proyectos. Lo que se probó y lo que quedó:
+
+| Qué se probó | Resultado |
+|---|---|
+| **Resolución dinámica** (`js/resolucion.js`) | ✅ **Queda.** Es lo que más pesa: dibujar menos píxeles. La imagen se pide al 90 % de la pantalla y se dibuja una parte (al empezar ≈ 75 %, como antes). Si los FPS bajan de 58, se dibuja un 10 % menos (hasta 45 %) y el celular la estira; si sobran (66 FPS o más, en pantallas de 120 Hz), sube despacio hasta el 90 %. Usa `XRView.requestViewportScale` de WebXR, sin recrear la sesión. Si el celular no lo permite, queda fija al 75 % (el panel `?debug=1` lo dice). Si bajar la resolución no mejora los FPS (por ejemplo, porque la cámara va a 30 cuadros), vuelve a la inicial y deja de ajustar. |
+| **Foveación** de WebXR | ⚪ three.js ya la pide al máximo, pero **solo la usan los visores** (Meta Quest); en los celulares no cambia nada. Se dejó explícita (`setFoveation(1)`). |
+| **Menos transparencias** | ✅ London: fuera las persianas (opacidad 0, invisibles pero se dibujaban) y el destello rojo; muebles y cortinas del lobby como **recorte**. Oficina: su material transparente grande, como recorte. La fachada de London y los vidrios de la Casa siguen transparentes: como recorte se perdían detalles (las franjas de los pisos, el interior detrás del muro cortina) y en la medición la diferencia no se notaba. Delivery Rush y la Cafetería no tenían transparencias. |
+| **Atlas de texturas** | ⚪ No. Ya hay pocas llamadas de dibujo (7 a 19 por modelo) y las texturas de pisos y azulejos se **repiten** (no se pueden juntar en un atlas sin que se vean costuras). |
+| **LOD / simplificación** | ⚪ No como LOD. Se midió con la versión liviana del carrusel en la AR (`&modelo=hero`): bajaba 24–36 % el tiempo, pero le quita los muebles, la comida y el lobby, justo lo que se explora de cerca: se notaría. Los modelos ya estaban simplificados donde no se nota (comida de Delivery Rush, fachadas de London). |
+| **Frustum culling** | ⚪ three.js ya no dibuja lo que queda fuera de la pantalla, pieza por pieza. Como cada modelo está unido en pocas piezas grandes (para tener pocas llamadas), casi siempre hay alguna parte visible. Partir los modelos en trozos aumentaría las llamadas para ahorrar solo triángulos, que no es lo que más pesa. |
+| Tone mapping, sombra pre-dibujada | ⚪ Se midieron (`&tm=0`, `&sombra=0`): la diferencia quedó dentro del ruido de la medición. Se mantienen. |
+| Antialias | ⚪ Por software cuesta mucho, pero en las GPU de celular (Mali) el antialias por hardware es casi gratis y sin él los bordes de las maquetas se ven dentados. Se mantiene (`&aa=0` para probar en el celular). |
+
+**Cómo se midió en la compu:** `cd pruebas && node rendimiento.mjs todos --sw`. Dibuja 60 cuadros con el modelo girando, a la resolución que tendría en el celular, con la **GPU por software** (SwiftShader): así el costo de cada píxel pesa de verdad (con la GPU de la compu todo da «rápido»). Cada caso se mide 3 veces y se queda el mejor. Es ~8 veces más lento que el Infinix, así que sirve para **comparar** antes y después, no como FPS reales: esos se miden en el celular con `?debug=1`.
+
+Con `--dinamica` compara, en la misma página y alternando, la resolución inicial (75 %) con el mínimo de la dinámica (45 %), en ms por cuadro (menos es mejor):
+
+| Proyecto | 75 % | 45 % | De cerca ×3, 75 % | De cerca ×3, 45 % |
+|---|---|---|---|---|
+| Casa Moderna | 92 | 44 (−52 %) | 257 | 103 (−60 %) |
+| Oficina | 121 | 64 (−47 %) | 267 | 116 (−57 %) |
+| Delivery Rush (1:12) | 61 | 31 (−49 %) | 81 | 39 (−53 %) |
+| London | 39 | 24 (−37 %) | 66 | 80 (ruido) |
+| Cafetería | 104 | 55 (−47 %) | 190 | 82 (−57 %) |
+
+Es decir: cuando un modelo pesa más de lo que el celular puede dibujar a 60 FPS (sobre todo de cerca), la resolución dinámica puede reducir el trabajo **a la mitad**. Comparar corridas distintas (versión anterior contra nueva) dio resultados con demasiado ruido (el mismo modelo de la Cafetería dio 104 y 40 ms en dos corridas), por eso la comparación definitiva es la de `?debug=1` en el celular.
+
+**Modo diagnóstico:** agrega `&debug=1` a la dirección (`ar.html?id=casa-moderna&debug=1`). Muestra FPS, tiempo por cuadro, JS por cuadro, llamadas, triángulos, memoria, resolución (y si es **dinámica** o fija) y los segundos (contados desde el toque en «Ver en mi espacio») hasta ver la cámara, detectar la mesa y colocar la maqueta; si se usó «Colocar aquí», lo indica. Interruptores para probar en el celular: `&res=0.6` (resolución fija), `&aa=0` (sin antialias), `&tm=0` (sin tone mapping), `&transp=0` (todo opaco), `&sombra=0` y `&modelo=hero` (versión liviana). En el **proyecto de video** (AR de model-viewer) `&debug=1` muestra los FPS y el tiempo por cuadro de la sesión WebXR.
 
 - **iPhone:** Quick Look (AR de Apple). Antes de abrirlo aparece una hoja con sus gestos (arrastrar, girar con dos dedos, pellizcar, cambiar entre «AR» y «Objeto»).
 - **Modo de prueba en la computadora:** `ar.html?id=casa-moderna&arprueba=1` abre la misma experiencia sin cámara, con el mouse. Lo usan las pruebas automáticas.
@@ -295,27 +328,28 @@ Meta: 60 fps (mínimo 30 estables). El modelo ya era liviano (12 384 triángulos
 | Next Order: Delivery Rush | Multimedia · escenario | Arllys Ramos y Xavier Ponce | No | GDD (12 páginas) |
 | Cafetería M3D | Multimedia · escenario | Arllys Ramos | No | — |
 
-Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redactó Claude a partir del GDD, los planos y los modelos. Llevan el campo `"_revisar"` en el JSON hasta que el equipo los confirme.
+Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redactó Claude a partir del GDD, los planos y los modelos, y el equipo los revisó en la Ronda 4 (ya no llevan `"_revisar"`). Periodo de Delivery Rush y Cafetería: Semestre 2 - 2026 (proyectos reales). En Oficina y London la materia sigue como `[EJEMPLO]`.
 
 ### Modelos optimizados (`node preparar.mjs todos`)
 
 | Modelo | Original | En el sitio | Triángulos | Llamadas de dibujo | Carrusel |
 |---|---|---|---|---|---|
-| Delivery Rush (diorama 1:24, 56 × 30 cm) | 11,5 MB (FBX convertido) | **0,8 MB** | 347 688 → 81 718 | 1 020 → 19 | 0,45 MB |
+| Delivery Rush (diorama **1:12**, 112 × 60 cm) | 11,5 MB (FBX convertido) | **0,8 MB** | 347 688 → 81 718 | 1 020 → 19 | 0,45 MB |
 | Cafetería (1:22, 56 × 55 cm) | 1,6 MB | **0,3 MB** | 32 357 | 189 → 9 | 0,19 MB |
 | Oficina (1:30, 51 × 39 cm) | 11,8 MB | **1,9 MB** | 39 882 | 133 → 17 | 0,9 MB |
-| London (1:400, 42 cm de alto) | 29,7 MB | **1,8 MB** | 142 742 → 81 927 | 60 → 20 | 0,95 MB |
+| London (1:400, 42 cm de alto) | 29,7 MB | **1,8 MB** | 142 742 → 80 791 | 60 → 18 | 0,95 MB |
 
-- **Delivery Rush:** sin techo (diorama) y sin las guías del diseño del nivel (huella de inicio, círculos de giro y ruta del robot), que no se ven en el juego. La comida y los adornos se simplificaron: a 1:24 un pastel mide menos de 1 cm. Como eran piezas *low poly* con caras planas, se guardan sin normales (se sombrean planas igual).
-- **London:** sin los mapas de relieve y rugosidad (a 1:400 no se notan y la AR propia no los usa) y con las fachadas simplificadas.
+- **Delivery Rush:** sin techo (diorama) y sin las guías del diseño del nivel (huella de inicio, círculos de giro y ruta del robot), que no se ven en el juego. **Ronda 4: pasó de 1:24 a 1:12** (el doble) para explorarlo como las maquetas de Arquitectura: a 1:24 aparecía muy chico. Con el pellizco llega hasta ×8 (≈ 1:1,5). Por eso en el JSON las alturas de los cortes y las posiciones de los 3 puntos se multiplicaron por 2, y «Colocar aquí» lo deja más lejos si el modelo es grande (su borde queda a ~30 cm del celular). La comida y los adornos se simplificaron (son piezas de pocos centímetros). Como eran piezas *low poly* con caras planas, se guardan sin normales (se sombrean planas igual).
+- **London:** sin los mapas de relieve y rugosidad (a 1:400 no se notan y la AR propia no los usa) y con las fachadas simplificadas. **Ronda 4:** se quitaron las persianas (tenían opacidad 0: no se veían, pero se dibujaban) y el destello rojo de la punta (casi invisible), y los muebles y cortinas del lobby pasaron de transparentes a **recorte** (`recorte` en la receta). La fachada se probó como recorte pero perdía las franjas de los pisos y no ganaba velocidad: sigue transparente.
+- **Oficina (Ronda 4):** su único material transparente grande (`material_9`, 76 % de píxeles invisibles) pasó a recorte.
 - Todos van con **compresión meshopt**. model-viewer y three.js bajan un decodificador de 25 KB (configurado en `index.html`, `ar.html` y `js/ar-propia.js`).
 - «Ver interior»: Oficina → Sin techo / Planta baja · London → Piso 12 / Lobby · Delivery Rush → Sin vigas / Muros bajos · Cafetería → Sin plafón (`"cortesDobleCara": false` porque sus muros son planos de una sola cara).
 
-### Créditos y licencias (revisar antes de presentar)
-- **Oficina Loft 18:** modelo «free Loft 18 mini office v.optimization» de **dasy444** (Sketchfab), **licencia Sketchfab Standard**. Permite usarlo en cualquier medio y en obras derivadas, pero **no permite redistribuir el archivo del modelo suelto**. Ojo: para que la AR funcione, `modelos/oficina.glb` queda publicado y se puede descargar desde el repositorio público.
-- **Rascacielos London:** «[FREE] London Skyscraper» de **99.Miles** (Sketchfab), **CC BY 4.0**: permite modificarlo y publicarlo nombrando al autor y la licencia (está en la ficha).
-- **Next Order: Delivery Rush:** «Modelado en Blender · Desarrollado en Unreal Engine 5». La lámina 12 del GDD declara recursos externos (plantilla VR de Unreal Engine 5.4.4, props decorativos de Sketchfab y sonidos de Freesound.org); en la ficha figuran como «por confirmar con el equipo».
-- **Cafetería M3D:** el modelo original usaba imágenes de internet (un damero de iStock y fotos de Marilyn Monroe, una guitarra y los Beatles en los cuadros). En la versión web se cambiaron por diseños propios generados en `herramientas/maqueta/texturas-cafeteria.mjs`; el archivo de la estudiante no se modificó.
+### Créditos y licencias (confirmados en la Ronda 4)
+- **Oficina Loft 18:** modelo «free Loft 18 mini office v.optimization» de **dasy444** (Sketchfab), **licencia Sketchfab Standard**. Permite usarlo en cualquier medio y en obras derivadas, pero **no permite redistribuir el archivo del modelo suelto**. Ojo: para que la AR funcione, `modelos/oficina.glb` queda publicado y se puede descargar desde el repositorio público. **Decisión del equipo:** se mantiene porque es un prototipo académico y un proyecto de ejemplo; el crédito al autor queda visible en la ficha y en la presentación se aclara que los proyectos de ejemplo no pertenecen al equipo. **Adaptación del modelo:** Xavier Ponce.
+- **Rascacielos London:** «[FREE] London Skyscraper» de **99.Miles** (Sketchfab), **CC BY 4.0**: permite modificarlo y publicarlo nombrando al autor y la licencia (está en la ficha). **Adaptación del modelo:** Xavier Ponce.
+- **Next Order: Delivery Rush:** «Modelado en Blender · Desarrollado en Unreal Engine 5». **Todos los modelos y props son originales del equipo** (confirmado en la Ronda 4; la mención de recursos externos de la lámina 12 del GDD no aplica al escenario publicado).
+- **Cafetería M3D:** el modelo original usaba imágenes de internet (un damero de iStock y fotos de Marilyn Monroe, una guitarra y los Beatles en los cuadros). En la versión web se cambiaron por diseños propios generados en `herramientas/maqueta/texturas-cafeteria.mjs`; el archivo de la estudiante no se modificó. El equipo aprobó estos diseños en blanco y negro.
 
 ## 8. La placa: QR (hoy) y NFC (después)
 
@@ -327,8 +361,9 @@ Las descripciones, los puntos y el asistente de los 4 proyectos nuevos los redac
 - **NFC (más adelante):** la placa muestra la dirección `…/index.html?src=nfc` con un botón «Copiar». Compra etiquetas **NTAG213 o NTAG215**, instala **NFC Tools** → Escribir → Añadir un registro → URL → pega la dirección → Escribir, y acerca la etiqueta. Pégala detrás de la zona punteada.
 
 ### Pruebas automáticas (carpeta `pruebas/`)
-- `npm test` corre `proyectos.test.mjs` (ficha y AR propia de los 4 proyectos nuevos, «3 proyectos» por carrera y carrusel de 6), `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance y que el televisor muestre el póster.
-- `node rendimiento.mjs` mide la AR propia (modo de prueba) con el panel de diagnóstico.
+- `npm test` corre `proyectos.test.mjs` (ficha y AR propia de los 4 proyectos nuevos, «3 proyectos» por carrera y carrusel de 6), `qr.test.mjs` (el QR, ver abajo), `maqueta.test.mjs` (adelanto, QR de la maqueta, AR propia en modo de prueba, ficha y visor de planos), `video-modos.test.mjs` (Televisor → Sin televisor → 360° → salir, sin que el video se reinicie, en monitor y celular) y `carrusel.test.mjs`. Este último comprueba que el carrusel avance solo a los 8 s, que los puntos cambien de proyecto, que se pause con el mouse, que con *reducir movimiento* no avance, que el televisor muestre el póster y (Ronda 4) que **se gire con el dedo** (con eventos táctiles reales: el arrastre horizontal gira y pausa, retoma 4 s después de soltar y el vertical mueve la página) y que en monitor el visor ocupe todo el ancho detrás de los títulos. `proyectos.test.mjs` también revisa (Ronda 4) los datos confirmados y, en los 5 modelos, el near de 1 cm y el pellizco hasta ×8.
+- `node rendimiento.mjs todos --sw` mide la AR propia de los 5 modelos (ver «Fluidez de los 6 modelos»).
+- `resolucion.test.mjs` simula FPS altos, bajos y con tope de cámara, y revisa la resolución dinámica.
 - `node capturas.mjs` recorre todas las páginas en **390 px y 1440 px**: revisa que no haya errores en la consola ni scroll horizontal y guarda capturas en `pruebas/capturas/` (no se suben al repositorio).
 
 ### Prueba automática del QR

@@ -4,6 +4,8 @@
 // 2. AR propia en modo de prueba: colocar, puntos 1-2-3, cortes de «Ver interior»
 //    y textos con «el escenario» en los proyectos de Multimedia. Guarda capturas.
 // 3. Capacidad: las carreras dicen «3 proyectos» y el carrusel tiene 6 puntos.
+// 4. Ronda 4: datos confirmados por el equipo, Delivery Rush a 1:12 y, en los 5 modelos,
+//    cámara con near de 1 cm y pellizco de ×0,2 a ×8.
 // Correr: cd pruebas → npm test
 // =========================================================
 import { test, before, after } from 'node:test';
@@ -112,3 +114,41 @@ test('capacidad: cada carrera dice «3 proyectos» y el carrusel tiene 6 puntos'
   }
   assert.deepEqual(errores, []);
 });
+
+test('Ronda 4: datos confirmados de Delivery Rush y la Cafetería (sin «por confirmar»)', async () => {
+  for (const id of ['deliveryrush', 'cafeteria']) {
+    const { pagina, contexto, errores } = await abrir(`proyecto.html?id=${id}`);
+    await pagina.locator('.ficha-grid').waitFor();
+    const texto = (await pagina.locator('main').textContent()).replace(/\s+/g, ' ');
+    assert.match(texto, /Semestre 2 - 2026/i, `${id}: periodo`);
+    assert.doesNotMatch(texto, /por confirmar|\[EJEMPLO\]/i, `${id}: sin marcas de ejemplo`);
+    if (id === 'deliveryrush') {
+      assert.match(texto, /originales del equipo/);
+      assert.match(texto, /Escala\s*1:12/i);
+    }
+    assert.deepEqual(errores, []);
+    await contexto.close();
+  }
+});
+
+for (const id of ['casa-moderna', 'oficina', 'london', 'deliveryrush', 'cafeteria']) {
+  test(`Ronda 4 · AR de ${id}: near de 1 cm y pellizco de ×0,2 a ×8`, async () => {
+    const { pagina, contexto, errores } = await abrir(`ar.html?id=${id}&arprueba=1`);
+    await pagina.waitForFunction(() => window.vitrina?.arPropia && document.getElementById('visor')?.loaded, null, { timeout: 60000 });
+    await pagina.locator('#ver-en-mi-espacio').click();
+    await pagina.locator('#capa-ar').waitFor({ state: 'visible' });
+    await pagina.click('[data-ar="ocultar-tutorial"]');
+    await pagina.mouse.click(195, 420);
+    await pagina.waitForFunction(() => window.vitrina.arPropia.estado().colocada);
+    const e = await pagina.evaluate(() => window.vitrina.arPropia.estado());
+    assert.ok(e.cerca <= 0.01, `near = ${e.cerca} m`);
+    assert.deepEqual(e.zoom, [0.2, 8]);
+    // «+» hasta el tope: llega a ×8 y no lo pasa
+    for (let i = 0; i < 12; i++) await pagina.click('[data-ar="mas"]');
+    assert.equal((await pagina.evaluate(() => window.vitrina.arPropia.estado())).escala, 8);
+    await pagina.waitForTimeout(800);
+    await pagina.screenshot({ path: captura(`ar-${id}-zoom-8.png`) });
+    assert.deepEqual(errores, []);
+    await contexto.close();
+  });
+}

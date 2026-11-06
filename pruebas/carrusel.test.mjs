@@ -3,6 +3,9 @@
 // - avanza solo cada 8 s y precarga el siguiente
 // - los puntos cambian de proyecto y el nombre lleva a la ficha
 // - se pausa con el mouse encima
+// - se gira con el dedo (arrastre horizontal), se pausa mientras se gira y retoma
+//   4 s después de soltar; el arrastre vertical sigue moviendo la página (Ronda 4)
+// - en monitor el visor ocupa todo el ancho del hero (Ronda 4)
 // - con «reducir movimiento» no avanza solo
 // - el televisor muestra el póster en la pantalla
 // Correr: cd pruebas → npm test
@@ -99,6 +102,61 @@ test('se pausa con el mouse encima', async () => {
   const antes = await estado(pagina);
   await pagina.waitForTimeout(9000);
   assert.equal((await estado(pagina)).actual, antes.actual, 'con el mouse encima no debe cambiar');
+  await contexto.close();
+});
+
+/** Arrastre con el dedo (eventos táctiles reales de Chrome, respetan touch-action) */
+async function arrastrarDedo(pagina, desde, hasta, { soltar = true } = {}) {
+  const cdp = await pagina.context().newCDPSession(pagina);
+  const punto = (x, y) => [{ x, y, id: 1 }];
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: punto(...desde) });
+  for (let i = 1; i <= 12; i++) {
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove',
+      touchPoints: punto(desde[0] + (hasta[0] - desde[0]) * i / 12, desde[1] + (hasta[1] - desde[1]) * i / 12) });
+    await pagina.waitForTimeout(16);
+  }
+  if (soltar) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  return cdp;
+}
+
+test('celular: se gira con el dedo, se pausa y retoma al soltar; el scroll vertical sigue funcionando', async () => {
+  const { pagina, contexto, errores } = await abrir({ movil: true });
+  const caja = await pagina.locator('#carrusel .carrusel-visor').boundingBox();
+  const centro = [caja.x + caja.width / 2, caja.y + caja.height / 2];
+  const giro = () => pagina.evaluate(() => document.querySelector('#carrusel model-viewer.activo').getCameraOrbit().theta);
+  const antes = await giro();
+  // Arrastre horizontal: gira el modelo y pausa el carrusel mientras el dedo está apoyado
+  const cdp = await arrastrarDedo(pagina, [centro[0] - 120, centro[1]], [centro[0] + 120, centro[1]], { soltar: false });
+  assert.ok(Math.abs((await giro()) - antes) > 0.3, 'el arrastre horizontal debe girar el modelo');
+  assert.equal(await pagina.evaluate(() => window.vitrina.carrusel.pausado), true, 'pausado mientras se gira');
+  assert.equal(await pagina.evaluate(() => scrollY), 0, 'el arrastre horizontal no mueve la página');
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await pagina.waitForTimeout(2000);
+  assert.equal(await pagina.evaluate(() => window.vitrina.carrusel.pausado), true, 'sigue en pausa justo después de soltar');
+  await pagina.waitForTimeout(2600);
+  assert.equal(await pagina.evaluate(() => window.vitrina.carrusel.pausado), false, 'retoma unos segundos después de soltar');
+  // Arrastre vertical sobre el visor: la página hace scroll
+  await arrastrarDedo(pagina, [centro[0], centro[1] + 120], [centro[0], centro[1] - 160]);
+  await pagina.waitForTimeout(600);
+  assert.ok(await pagina.evaluate(() => scrollY) > 50, 'el arrastre vertical debe mover la página');
+  assert.deepEqual(errores, []);
+  await contexto.close();
+});
+
+test('monitor: el visor ocupa todo el ancho del hero, detrás de los títulos', async () => {
+  const { pagina, contexto } = await abrir();
+  const [hero, visor, titulo] = await Promise.all(['.hero-cuerpo', '#carrusel .carrusel-visor', '.hero h1']
+    .map(s => pagina.locator(s).boundingBox()));
+  assert.equal(Math.round(visor.width), Math.round(hero.width), 'visor a todo el ancho');
+  assert.ok(titulo.x + titulo.width <= visor.x + visor.width && titulo.y < visor.y + visor.height, 'el título queda encima del visor');
+  // El título se dibuja por encima del modelo (z-index), y el modelo se encuadra en «auto»
+  const encima = await pagina.evaluate(() => {
+    const h1 = document.querySelector('.hero h1').getBoundingClientRect();
+    return document.elementsFromPoint(h1.x + 10, h1.y + 10).findIndex(e => e.matches('.hero h1')) <
+      document.elementsFromPoint(h1.x + 10, h1.y + 10).findIndex(e => e.matches('model-viewer'));
+  });
+  assert.ok(encima, 'el título va por encima del visor');
+  await pagina.screenshot({ path: captura('carrusel-monitor-ancho.png') });
   await contexto.close();
 });
 

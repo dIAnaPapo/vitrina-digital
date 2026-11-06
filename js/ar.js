@@ -18,6 +18,7 @@ import { cargarDatos, leerParametro, tipoDe, palabrasObjeto } from './datos.js';
 import { responder } from './asistente.js';
 import { registrar } from './metricas.js';
 import { URL_PUBLICA } from './config.js';
+import { diagnosticoActivo, medirARDeModelViewer } from './diagnostico.js';
 
 const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
   (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -298,6 +299,7 @@ window.vitrina = { proyecto, abrirPunto, preguntar };
 // 6. Proyecto con video → pantalla de cine con letra sincronizada
 // ---------------------------------------------------------
 if (esVideo) {
+  if (diagnosticoActivo()) medirARDeModelViewer(visor);     // ?debug=1: FPS dentro de la AR
   const { iniciarCine } = await import('./ar-video.js');
   iniciarCine(visor, proyecto).catch((e) => {
     console.error(e);
@@ -314,6 +316,7 @@ if (esVideo) {
 if (esMaqueta) {
   const modoPrueba = leerParametro('arprueba') === '1';
   const forzarClasica = leerParametro('ar') === 'clasica' || datos.configuracion?.arPropia === false;
+  if (forzarClasica && diagnosticoActivo()) medirARDeModelViewer(visor);
   // Se revisa el soporte SIN descargar three.js (solo se descarga si se va a usar)
   let soporta = false;
   if (!forzarClasica && window.isSecureContext && navigator.xr?.isSessionSupported) {

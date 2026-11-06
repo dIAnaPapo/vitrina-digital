@@ -5,6 +5,11 @@
 //   - Hay DOS <model-viewer> superpuestos. Mientras uno se ve, el otro
 //     PRECARGA el proyecto siguiente; al cambiar se cruzan con un fundido (600 ms).
 //   - Cambia cada 8 s. Se pausa si la persona pasa el mouse, toca o enfoca el carrusel.
+//   - Se gira con el dedo o el mouse (arrastre HORIZONTAL; el vertical sigue
+//     haciendo scroll de la página). Mientras se gira, el carrusel se pausa y
+//     retoma 4 s después de soltarlo.
+//   - Monitor: el visor ocupa todo el ancho del hero (detrás de los títulos) y la
+//     cámara se aleja lo necesario para que el modelo se vea completo.
 //   - Puntos indicadores para elegir un proyecto. Nombre y carrera llevan a la ficha.
 //   - Con «reducir movimiento»: no cambia solo ni gira; solo con los puntos.
 //   - Proyecto de video: el televisor 3D muestra el PÓSTER (no el video de 9 MB),
@@ -15,7 +20,7 @@ import { escapar, iconos, tipoDe } from './datos.js';
 
 const INTERVALO = 8000;       // ms entre proyectos
 const FUNDIDO = 600;          // ms del fundido (igual que en CSS)
-const PAUSA_TACTIL = 10000;   // tras tocarlo en el celular, espera 10 s antes de seguir
+const PAUSA_TRAS_GIRAR = 4000; // tras soltar el dedo, espera 4 s antes de seguir
 
 /**
  * @param {HTMLElement} raiz       el <section class="carrusel">
@@ -31,12 +36,13 @@ export function crearCarrusel(raiz, proyectos, carreras) {
   const textoTitulo = raiz.querySelector('.carrusel-titulo');
   const contPuntos = raiz.querySelector('.carrusel-puntos');
   const sinMovimiento = matchMedia('(prefers-reduced-motion: reduce)');
+  const monitor = matchMedia('(min-width: 900px)');
 
   let visible = a, oculto = b;
   let actual = 0;
   let cambiando = false;
   let pausadoMouse = false, pausadoTacto = false, pausadoFoco = false;
-  let temporizador = 0, temporizadorTacto = 0;
+  let temporizador = 0, temporizadorTacto = 0, ultimoToque = -1e9;
   const cargado = new Map();   // visor → índice del proyecto que tiene cargado
 
   raiz.querySelector('.carrusel-enlace .circulo').innerHTML = iconos.flecha;
@@ -62,14 +68,29 @@ export function crearCarrusel(raiz, proyectos, carreras) {
       boton.setAttribute('aria-current', String(i === actual)));
   }
 
+  // ---------- Encuadre ----------
+  // "camaraHero" = «giro inclinación distancia». En el celular se usa tal cual (un poco
+  // más cerca que «auto» para que el modelo llene el visor angosto). En monitor el visor
+  // es muy ancho: la distancia pasa a «auto» (model-viewer calcula la distancia para que
+  // el modelo entre completo desde cualquier lado), así se ve entero al girar.
+  // La inclinación queda fija: el dedo solo gira el modelo de lado a lado.
+  function encuadrar(visor) {
+    const p = proyectos[cargado.get(visor)];
+    if (!p) return;
+    const [giro, inclinacion, distancia] =
+      (p.ar.camaraHero ?? (tipoDe(p) === 'video' ? '-25deg 80deg 96%' : '30deg 62deg 80%')).split(/\s+/);
+    visor.minCameraOrbit = `-Infinity ${inclinacion} auto`;
+    visor.maxCameraOrbit = `Infinity ${inclinacion} 200%`;
+    visor.cameraOrbit = `${giro} ${inclinacion} ${monitor.matches ? 'auto' : distancia}`;
+  }
+
   // ---------- Cargar un proyecto en un visor ----------
   async function cargar(visor, i) {
     if (cargado.get(visor) === i) return;
     const p = proyectos[i];
     cargado.set(visor, i);
     visor.alt = p.ar.alt;
-    // Cámara más cerca que «auto» para que el modelo llene el visor (se puede ajustar por proyecto con "camaraHero")
-    visor.cameraOrbit = p.ar.camaraHero ?? (tipoDe(p) === 'video' ? '-25deg 80deg 96%' : '30deg 62deg 80%');
+    encuadrar(visor);
     visor.autoRotate = !sinMovimiento.matches;
     visor.src = p.ar.modeloHero ?? p.ar.modelo;
     await new Promise((listo) => {
@@ -121,14 +142,29 @@ export function crearCarrusel(raiz, proyectos, carreras) {
 
   raiz.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') { pausadoMouse = true; programar(); } });
   raiz.addEventListener('pointerleave', (e) => { if (e.pointerType === 'mouse') { pausadoMouse = false; programar(); } });
+  // Dedo: pausa mientras toca o gira; retoma 4 s después de soltar. Si el navegador
+  // se queda con el gesto (scroll vertical), llega «pointercancel» y cuenta como soltar.
   raiz.addEventListener('pointerdown', (e) => {
+    ultimoToque = performance.now();
     if (e.pointerType === 'mouse') return;
     pausadoTacto = true;
-    programar();
     clearTimeout(temporizadorTacto);
-    temporizadorTacto = setTimeout(() => { pausadoTacto = false; programar(); }, PAUSA_TACTIL);
+    programar();
   });
-  raiz.addEventListener('focusin', () => { pausadoFoco = true; programar(); });
+  const soltar = (e) => {
+    if (e.pointerType === 'mouse' || !pausadoTacto) return;
+    clearTimeout(temporizadorTacto);
+    temporizadorTacto = setTimeout(() => { pausadoTacto = false; programar(); }, PAUSA_TRAS_GIRAR);
+  };
+  raiz.addEventListener('pointerup', soltar);
+  raiz.addEventListener('pointercancel', soltar);
+  monitor.addEventListener('change', () => [a, b].forEach(encuadrar));
+  // Pausa por foco solo con el TECLADO: tocar o hacer clic en el visor también le da el
+  // foco (camera-controls), y esa pausa no se quitaría hasta tocar otra cosa.
+  raiz.addEventListener('focusin', () => {
+    if (performance.now() - ultimoToque < 1000) return;
+    pausadoFoco = true; programar();
+  });
   raiz.addEventListener('focusout', () => { pausadoFoco = false; programar(); });
   sinMovimiento.addEventListener('change', () => {
     [a, b].forEach(v => { v.autoRotate = !sinMovimiento.matches; });
@@ -150,5 +186,5 @@ export function crearCarrusel(raiz, proyectos, carreras) {
   document.readyState === 'complete' ? empezar() : addEventListener('load', empezar, { once: true });
 
   // Para pruebas desde la consola
-  return { mostrar, get actual() { return actual; } };
+  return { mostrar, get actual() { return actual; }, get pausado() { return pausadoMouse || pausadoTacto || pausadoFoco; } };
 }

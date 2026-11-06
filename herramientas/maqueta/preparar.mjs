@@ -17,9 +17,10 @@ const MODELOS = '../../modelos/';
 const recetas = {
   // DeliveryRush (Virtual Games): mapa del nivel 1, convertido de FBX con FBX2glTF.
   // Diorama sin techo; se quitan las guías del diseño de nivel (no se ven en el juego).
+  // Ronda 4: 1:12 (antes 1:24) para explorarlo como las maquetas: 1,1 m × 0,6 m sobre la mesa.
   deliveryrush: {
     entrada: MATERIAL + 'multimedia/DeliveryRush_Mapa_RamosyPonce.glb',
-    escala: 24,
+    escala: 12,
     quitar: /^(CEILING_|GUIDE_|MK_)/,
     simplificar: { nodos: /^(PROP_|DEC_|KIT_Props|FRIDGE_|PAC_)/, ratio: 0.15, error: 0.05, planas: true },
     meshopt: true,
@@ -36,6 +37,8 @@ const recetas = {
   oficina: {
     entrada: MATERIAL + 'arquitectura/Ejemplo3_Oficina.glb',
     escala: 30,
+    // Ronda 4: textura con 76 % de píxeles invisibles y el resto casi opaco → recorte (sin mezcla)
+    recorte: /^material_9$/,
     meshopt: true,
     hero: { simplificarTodo: { ratio: 0.4 }, maxTextura: 256, soloColor: true }
   },
@@ -44,6 +47,12 @@ const recetas = {
     escala: 400,
     maxTextura: 512,
     soloColor: true,
+    // Ronda 4: las persianas tienen opacidad 0 y el destello rojo de la punta es casi invisible: se quitan.
+    // Los muebles y cortinas del lobby son recortes (píxeles 100 % visibles o invisibles).
+    // La fachada se probó como recorte, pero perdía las franjas de los pisos y no se ganaba
+    // velocidad (pruebas/rendimiento.mjs --sw): sigue transparente, igual que los vidrios.
+    quitarMateriales: /^(Interior_Blinds|Flare_Red)$/,
+    recorte: /^(Furniture|Lobby_Furniture|Lobby_Curtains)$/,
     // Fachadas e interiores de los pisos: a 1:400 un error de 0,5 % (≈ 2 mm en la maqueta) no se ve
     simplificar: { nodos: /^(Building_Facade|Interior_Top|Glass_Generic|Top_Piece)/, ratio: 0.4, error: 0.005, planas: true },
     meshopt: true,

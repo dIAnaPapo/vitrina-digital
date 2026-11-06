@@ -22,9 +22,14 @@
 //   - Ningún objeto nuevo por cuadro (vectores y matrices reutilizados).
 //   - Shaders y texturas se preparan ANTES de abrir la cámara.
 //   - El visor 3D de la página se oculta mientras dura la AR (deja de dibujar).
+// Ronda 4:
+//   - Resolución DINÁMICA (js/resolucion.js): si los FPS bajan de 58 se dibuja una parte
+//     más chica de la imagen y el celular la estira; si sobran, se vuelve a subir.
+//   - Cámara con «near» de 1 cm: se puede acercar el celular sin que el modelo se corte.
+//   - Pellizco de ×0,2 a ×8.
 // Modo diagnóstico: ?debug=1 muestra FPS, llamadas, triángulos y memoria
-// (js/diagnostico.js). Con ?debug=1 también se puede probar &res=0.6 (resolución)
-// y &aa=0 (sin antialias).
+// (js/diagnostico.js). Con ?debug=1 también se puede probar &res=0.6 (resolución fija),
+// &aa=0 (sin antialias), &tm=0 (sin tone mapping), &transp=0 (todo opaco), &sombra=0 y &modelo=hero (versión liviana).
 //
 // Red de seguridad: si algo falla al iniciar, iniciar() devuelve false y
 // ar.js abre la AR de model-viewer.
@@ -36,6 +41,15 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { diagnosticoActivo, crearDiagnostico } from './diagnostico.js';
+import { crearResolucionDinamica } from './resolucion.js';
+
+// Cámara: «near» = lo más cerca que se dibuja. 1 cm deja acercar el celular a la maqueta sin
+// que se corte (WebXR usa 10 cm si no se le dice nada). «far» = 20 m, de sobra para la mesa.
+const CERCA = 0.01, LEJOS = 20;
+// Tamaño con el pellizco y los botones − +, respecto del tamaño al colocar
+const ZOOM_MIN = 0.2, ZOOM_MAX = 8;
+// Resolución dinámica: la imagen se pide al 90 % de la pantalla y se dibuja una parte de ella
+const RES_DINAMICA_BASE = 0.9;
 
 /** ¿Este navegador puede abrir AR con WebXR? (Chrome en Android con ARCore) */
 export async function soportaARPropia() {
@@ -50,8 +64,13 @@ function leerAjustes() {
   const p = new URLSearchParams(location.search);
   const debug = diagnosticoActivo();
   const res = debug && p.has('res') ? THREE.MathUtils.clamp(Number(p.get('res')) || 0.75, 0.4, 1) : 0.75;
-  const antialias = !(debug && p.get('aa') === '0');
-  return { res, antialias, debug };
+  const apagado = (clave) => debug && p.get(clave) === '0';
+  return {
+    res, debug,
+    resFija: debug && p.has('res'),                       // &res=… desactiva la resolución dinámica
+    modeloHero: debug && p.get('modelo') === 'hero',
+    antialias: !apagado('aa'), toneMapping: !apagado('tm'), transparencias: !apagado('transp'), sombra: !apagado('sombra')
+  };
 }
 
 /**
@@ -71,6 +90,10 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   const ajustes = leerAjustes();
 
   let renderer, escena, camaraPrueba, pivote, modelo, reticula, raycaster;
+  // Resolución dinámica: solo si el navegador sabe dibujar una parte de la imagen (XRView.requestViewportScale).
+  // Se crea una nueva en cada sesión (ver iniciar).
+  const puedeDinamica = !modoPrueba && !ajustes.resFija && typeof XRView !== 'undefined' && 'requestViewportScale' in XRView.prototype;
+  let dinamica = null;
   const plano = new THREE.Plane(new THREE.Vector3(0, -1, 0), 1e6);
   const variantes = [];              // por malla: material normal y material con corte
   let precarga = null;
@@ -84,6 +107,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   const puntoHit = new THREE.Vector3();
   const inicial = { posicion: new THREE.Vector3(), giro: 0 };
   let giroObjetivo = 0, escalaObjetivo = 1, posicionObjetivo = null;
+  let radioModelo = 0.3;             // media diagonal en planta (m): para «Colocar aquí»
   let nivelInterior = 0;
   let cuadroN = 0, relojAnterior = 0;
   let anchoCapa = innerWidth, altoCapa = innerHeight;
@@ -108,17 +132,22 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   // ---------------------------------------------------------
   function precargar() {
     precarga ??= (async () => {
-      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(proyecto.ar.modelo);   // modelos comprimidos con meshopt
+      // &modelo=hero (diagnóstico): carga la versión liviana del carrusel, para medir cuánto pesan los triángulos
+      const url = ajustes.modeloHero && proyecto.ar.modeloHero ? proyecto.ar.modeloHero : proyecto.ar.modelo;
+      const gltf = await new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(url);   // modelos comprimidos con meshopt
       escena = new THREE.Scene();
       renderer = new THREE.WebGLRenderer({ antialias: ajustes.antialias, alpha: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
       renderer.setSize(innerWidth, innerHeight);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMapping = ajustes.toneMapping ? THREE.ACESFilmicToneMapping : THREE.NoToneMapping;
       renderer.toneMappingExposure = 1.3;           // compensa el brillo que antes daban los reflejos del entorno
       renderer.localClippingEnabled = true;          // para «Ver interior»
       renderer.xr.enabled = true;
-      renderer.xr.setFramebufferScaleFactor(ajustes.res);
+      // La resolución de la AR (fija o dinámica) se decide al abrir la sesión: ver iniciar()
+      // Foveación (menos detalle en los bordes de la imagen): three.js ya la pide al máximo,
+      // pero solo la aplican los visores (Quest); en los celulares no tiene efecto.
+      renderer.xr.setFoveation(1);
       // Luz: solo 2 luces y sin mapa de entorno (con materiales Lambert se ve casi igual y cuesta mucho menos)
       escena.add(new THREE.HemisphereLight(0xffffff, 0xd6d0c6, 3.2));
       const sol = new THREE.DirectionalLight(0xffffff, 1.4);
@@ -142,7 +171,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       pivote.add(modelo);
       const caja = new THREE.Box3().setFromObject(modelo);
       const tam = caja.getSize(new THREE.Vector3());
-      pivote.add(sombraFalsa(tam.x * 1.25, tam.z * 1.7));
+      radioModelo = Math.hypot(tam.x, tam.z) / 2;
+      if (ajustes.sombra) pivote.add(sombraFalsa(tam.x * 1.25, tam.z * 1.7));
       escena.add(pivote);
 
       // Retícula: anillo + la sombra de la casa donde va a aparecer
@@ -159,7 +189,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
 
       // Preparar AHORA (y no al abrir la cámara) los shaders de las dos variantes y subir las texturas a la GPU.
       // compile() solo recorre lo visible, por eso se muestra todo un momento (nada se dibuja aquí).
-      camaraPrueba = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.01, 100);
+      // En WebXR three.js copia el near/far de esta cámara a la sesión (depthNear/depthFar)
+      camaraPrueba = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, CERCA, LEJOS);
       pivote.visible = reticula.visible = true;
       usarCorte(true);
       await renderer.compileAsync(escena, camaraPrueba);
@@ -169,7 +200,13 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       variantes.forEach(({ normal }) => normal.emissiveMap && renderer.initTexture(normal.emissiveMap));
       pivote.visible = reticula.visible = false;
 
-      if (ajustes.debug) diag = crearDiagnostico(capa, renderer, `Optimizada · res ${ajustes.res} · AA ${ajustes.antialias ? 'sí' : 'no'}`);
+      if (ajustes.debug) {
+        const apagados = ['toneMapping', 'transparencias', 'sombra'].filter(k => !ajustes[k]);
+        diag = crearDiagnostico(capa, renderer, `Ronda 4 · AA ${ajustes.antialias ? 'sí' : 'no'}${apagados.length ? ' · sin ' + apagados.join(', ') : ''}`,
+          () => dinamica
+            ? `Res. dinámica ${Math.round(dinamica.escala * RES_DINAMICA_BASE * 100)} %${dinamica.fija ? ' (fija: el límite no es la GPU)' : ''}`
+            : `Res. fija ${Math.round(ajustes.res * 100)} %${ajustes.resFija || modoPrueba ? '' : ' (este celular no permite la dinámica)'}`);
+      }
       return true;
     })();
     return precarga;
@@ -179,7 +216,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   function materialBarato(m) {
     const b = new THREE.MeshLambertMaterial({
       name: m.name, color: m.color, map: m.map, emissive: m.emissive, emissiveMap: m.emissiveMap,
-      emissiveIntensity: m.emissiveIntensity, transparent: m.transparent, opacity: m.opacity,
+      emissiveIntensity: m.emissiveIntensity,
+      transparent: m.transparent && ajustes.transparencias, opacity: ajustes.transparencias ? m.opacity : 1,
       alphaTest: m.alphaTest, depthWrite: m.depthWrite, vertexColors: m.vertexColors, side: THREE.FrontSide,
       flatShading: m.flatShading                    // piezas «low poly» guardadas sin normales
     });
@@ -255,9 +293,22 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
           domOverlay: { root: capa }
         });
         sesion.addEventListener('end', alTerminar);
+        // Resolución: con la dinámica la imagen se pide al 90 % y se dibuja una parte (al empezar
+        // 0,83 × 0,9 ≈ 75 %, como antes). Sin ella (o con &res=…) queda fija en el 75 %.
+        // La dinámica solo funciona con la capa clásica (XRWebGLLayer), que es la que usa three.js
+        // cuando el navegador no ofrece la «Layers API» de WebXR (así es en los celulares Android).
+        dinamica = puedeDinamica && sesion.renderState.layers === undefined ? crearResolucionDinamica({ inicial: 0.83 }) : null;
+        renderer.xr.setFramebufferScaleFactor(dinamica ? RES_DINAMICA_BASE : ajustes.res);
         renderer.xr.setReferenceSpaceType('local');
         await renderer.xr.setSession(sesion);
         referencia = renderer.xr.getReferenceSpace();
+        if (dinamica) {
+          // three.js pide el rectángulo de dibujo de cada vista con getViewport(); justo antes se le
+          // indica a la vista qué parte usar. Así no hay que modificar three.js.
+          const capaXR = renderer.xr.getBaseLayer();
+          const original = capaXR.getViewport.bind(capaXR);
+          capaXR.getViewport = (vista) => { vista.requestViewportScale?.(dinamica.escala); return original(vista); };
+        }
         const espacioVista = await sesion.requestReferenceSpace('viewer');
         fuenteHit = await pedirHitTest(espacioVista);
       }
@@ -341,6 +392,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
 
   function cuadro(tiempo, frame) {
     const ahora = performance.now();
+    if (frame) dinamica?.cuadro(ahora);
     const dt = Math.min((ahora - relojAnterior) / 1000, 0.1);
     relojAnterior = ahora;
 
@@ -428,7 +480,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
   // ---------------------------------------------------------
   // Colocar y restablecer
   // ---------------------------------------------------------
-  /** «Colocar aquí»: sin mesa detectada, la maqueta va ~60 cm frente a la cámara, sobre un plano estimado. */
+  /** «Colocar aquí»: sin mesa detectada, la maqueta va frente a la cámara (60 cm, o más si es grande:
+   *  su borde queda a unos 30 cm), sobre un plano estimado. */
   function colocarFrente() {
     const camara = camaraActual();
     origen.setFromMatrixPosition(camara.matrixWorld);
@@ -436,7 +489,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     haciaPunto.y = 0;
     if (haciaPunto.lengthSq() < 1e-6) haciaPunto.set(0, 0, -1);
     haciaPunto.normalize();
-    puntoHit.copy(origen).addScaledVector(haciaPunto, 0.6);
+    puntoHit.copy(origen).addScaledVector(haciaPunto, Math.max(0.6, radioModelo + 0.3));
     puntoHit.y = origen.y - 0.45;          // plano estimado: una mesa unos 45 cm por debajo del celular
     colocar(true);
   }
@@ -525,7 +578,7 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
       pivote.rotation.y = giroObjetivo;
     } else if (punteros.size === 2 && inicioGesto.dos) {
       const [a, b] = [...punteros.values()];
-      escalaObjetivo = THREE.MathUtils.clamp(inicioGesto.escala * Math.hypot(a.x - b.x, a.y - b.y) / inicioGesto.distancia, 0.25, 4);
+      escalaObjetivo = THREE.MathUtils.clamp(inicioGesto.escala * Math.hypot(a.x - b.x, a.y - b.y) / inicioGesto.distancia, ZOOM_MIN, ZOOM_MAX);
       pivote.scale.setScalar(escalaObjetivo);
       const ahora = puntoEnLaMesa((a.x + b.x) / 2, (a.y + b.y) / 2, inicioGesto.ahora);
       if (ahora && inicioGesto.mesa) {
@@ -566,8 +619,8 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     }
     if (accion === 'izquierda') giroObjetivo += Math.PI / 4;
     if (accion === 'derecha') giroObjetivo -= Math.PI / 4;
-    if (accion === 'mas') escalaObjetivo = Math.min(4, escalaObjetivo * 1.25);
-    if (accion === 'menos') escalaObjetivo = Math.max(0.25, escalaObjetivo / 1.25);
+    if (accion === 'mas') escalaObjetivo = Math.min(ZOOM_MAX, escalaObjetivo * 1.25);
+    if (accion === 'menos') escalaObjetivo = Math.max(ZOOM_MIN, escalaObjetivo / 1.25);
     if (accion === 'centrar' && colocadaManual && hayHit) {
       // Se colocó con «Colocar aquí» y ahora sí se encontró la mesa: se apoya en ella
       posicionObjetivo = puntoHit.clone();
@@ -632,10 +685,38 @@ export function crearARPropia({ proyecto, capa, compartidos = [], alTocarPunto, 
     paso < pasos.length - 1 ? mostrarTutorial(paso + 1) : cerrarTutorial(false);
   });
 
+  /**
+   * Solo para medir en la computadora (pruebas/rendimiento.mjs, modo de prueba): dibuja `cuadros`
+   * cuadros con el modelo girando, al tamaño `escala` y a la resolución `res`, y espera a que la GPU termine cada uno
+   * (leer un píxel obliga a esperar; gl.finish() en Chrome no espera de verdad).
+   * La resolución imita la de la AR en el celular (pantalla × res). Devuelve ms por cuadro.
+   */
+  function medirCuadros(cuadros = 60, escala = 1, res = ajustes.res) {
+    if (!modoPrueba || !colocada) return null;
+    const gl = renderer.getContext(), proporcion = renderer.getPixelRatio(), giro = pivote.rotation.y;
+    const pixel = new Uint8Array(4), esperar = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+    renderer.setPixelRatio(devicePixelRatio * res);
+    pivote.scale.setScalar(escala);
+    renderer.render(escena, camaraPrueba); esperar();            // primer cuadro fuera de la cuenta
+    const t0 = performance.now();
+    for (let i = 0; i < cuadros; i++) {
+      pivote.rotation.y = giro + (i / cuadros) * Math.PI * 2;
+      renderer.render(escena, camaraPrueba);
+      esperar();
+    }
+    const ms = (performance.now() - t0) / cuadros;
+    const resultado = { ms, ancho: renderer.domElement.width, alto: renderer.domElement.height,
+      llamadas: renderer.info.render.calls, triangulos: renderer.info.render.triangles };
+    pivote.rotation.y = giro; pivote.scale.setScalar(escalaObjetivo);
+    renderer.setPixelRatio(proporcion);
+    return resultado;
+  }
+
   return {
-    precargar, iniciar, salir, resaltar,
+    precargar, iniciar, salir, resaltar, medirCuadros,
     get activa() { return !capa.hidden; },
     // Solo lectura, para las pruebas automáticas
-    estado: () => ({ colocada, nivelInterior, giro: giroObjetivo, escala: escalaObjetivo, visible: !!pivote?.visible, hitTest: !!fuenteHit })
+    estado: () => ({ colocada, nivelInterior, giro: giroObjetivo, escala: escalaObjetivo, visible: !!pivote?.visible, hitTest: !!fuenteHit,
+      cerca: camaraPrueba?.near, zoom: [ZOOM_MIN, ZOOM_MAX] })
   };
 }

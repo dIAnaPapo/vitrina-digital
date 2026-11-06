@@ -43,13 +43,15 @@
       <p class="display lema subrayado">Proyectos de<br>nuestros estudiantes</p>
 
       <!-- Carrusel: el visor 3D va rotando entre los proyectos (js/carrusel.js).
-           Dos visores superpuestos: uno se ve y el otro precarga el siguiente. -->
+           Dos visores superpuestos: uno se ve y el otro precarga el siguiente.
+           camera-controls + touch-action="pan-y": se gira con arrastre horizontal y
+           el arrastre vertical sigue moviendo la página. -->
       <section class="carrusel" id="carrusel" aria-roledescription="carrusel" aria-label="Proyectos expuestos">
         <div class="carrusel-visor">
           <model-viewer class="carrusel-modelo" loading="eager" rotation-per-second="14deg" interaction-prompt="none"
-            disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
+            camera-controls touch-action="pan-y" disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
           <model-viewer class="carrusel-modelo" loading="eager" rotation-per-second="14deg" interaction-prompt="none"
-            disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
+            camera-controls touch-action="pan-y" disable-zoom disable-pan disable-tap shadow-intensity="1" exposure="1.1"></model-viewer>
         </div>
         <a class="carrusel-enlace" href="#carreras" aria-live="off">
           <span><span class="carrusel-carrera"></span><strong class="carrusel-titulo">Cargando…</strong></span>

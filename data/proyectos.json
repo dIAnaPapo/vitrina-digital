@@ -364,7 +364,6 @@
       "estudiante": "Alberto Urgilés",
       "materia": "[EJEMPLO] Materia por confirmar",
       "periodo": "Semestre 2 - 2026",
-      "_revisar": "Textos redactados por Claude a partir del material (GDD, planos o modelo). Revisar y borrar esta nota.",
       "descripcion": "Oficina tipo loft de dos niveles, con una huella aproximada de 15,3 × 10,0 m, planta en forma de «L» escalonada y 199,67 m² útiles. La planta baja es una zona abierta a doble altura que integra la recepción, una sala de reuniones para 6 personas, un lounge con sofá en «L» y una zona de café junto a la fachada acristalada este; hacia el sur hay tres oficinas privadas y, en el núcleo oeste, los servicios higiénicos. Una escalera recta adosada al muro norte sube al mezzanine en «L» (+2,59 m), con cafetería, bodega, sala de descanso, coworking y una segunda sala de reuniones, protegido por una baranda de vidrio templado. La cubierta es una losa plana con parapeto.",
       "portada": "img/oficina-render.webp",
       "imagenes": [],
@@ -429,7 +428,7 @@
         "url": "https://sketchfab.com/3d-models/free-loft-18-mini-office-voptimization-e434caaeaa4a4347a3c45eac6c138c30",
         "licencia": "Sketchfab Standard (gratuita)",
         "licenciaUrl": "https://sketchfab.com/licenses",
-        "adaptacion": "",
+        "adaptacion": "Xavier Ponce",
         "cambios": "Planos elaborados a partir del modelo original; para la vitrina se optimizó para celular."
       },
       "ar": {
@@ -599,8 +598,7 @@
       "ubicacion": "",
       "estudiante": "Arllys Ramos y Xavier Ponce",
       "materia": "Virtual Games",
-      "periodo": "[EJEMPLO] Por confirmar",
-      "_revisar": "Textos redactados por Claude a partir del material (GDD, planos o modelo). Revisar y borrar esta nota.",
+      "periodo": "Semestre 2 - 2026",
       "descripcion": "Videojuego de realidad virtual de simulación y arcade para jugadores casuales desde los 12 años. Trabajas el turno nocturno en una cafetería estilo dark kitchen: lees el pedido en el monitor, descifras los códigos escondidos en notas adhesivas para abrir la despensa y el refrigerador con un teclado virtual, esquivas al robot de limpieza Pac-Cleaner, que se averió y patrulla el pasillo, y llevas cada producto a su sensor de validación antes de pulsar el botón de despacho. Aquí se ve el mapa del nivel 1 como un diorama para la mesa.",
       "portada": "img/deliveryrush-render.webp",
       "imagenes": [],
@@ -688,8 +686,8 @@
           "texto": "Modelado en Blender · Desarrollado en Unreal Engine 5"
         },
         {
-          "etiqueta": "Recursos externos (según el GDD)",
-          "texto": "[EJEMPLO] Por confirmar con el equipo: plantilla VR de Unreal Engine 5.4.4, props decorativos de Sketchfab y efectos de sonido de Freesound.org, con licencias de uso libre."
+          "etiqueta": "Modelos y props",
+          "texto": "Todos los modelos y props del escenario son originales del equipo."
         }
       ],
       "ar": {
@@ -697,17 +695,17 @@
         "modeloHero": "modelos/deliveryrush-hero.glb",
         "poster": "img/deliveryrush-render.webp",
         "modeloIOS": "",
-        "escala": "1:24",
+        "escala": "1:12",
         "camara": "25deg 50deg 75%",
         "camaraHero": "25deg 50deg 78%",
         "cortes": [
           {
             "nombre": "Sin vigas",
-            "altura": 0.1063
+            "altura": 0.2126
           },
           {
             "nombre": "Muros bajos",
-            "altura": 0.0646
+            "altura": 0.1292
           }
         ],
         "alt": "Diorama 3D del nivel 1 de un videojuego: una cafetería sin techo con cocina, pasillo, vitrinas de postres y estación de entrega",
@@ -716,21 +714,21 @@
             "id": "pedidos",
             "titulo": "Monitor de pedidos",
             "texto": "Aquí empieza el nivel: el monitor de la cocina muestra la orden activa (por ejemplo, 1 postre y 1 bebida). Cerca está la nota adhesiva con el primer código.",
-            "posicion": "-0.1813 0.0563 0.0953",
+            "posicion": "-0.3626 0.1126 0.1906",
             "normal": "1 0 0"
           },
           {
             "id": "pac-cleaner",
             "titulo": "Pac-Cleaner",
             "texto": "El robot de limpieza se averió y patrulla el pasillo principal. Si te choca, te empuja y te desorienta: pierdes tiempo, pero la partida no se reinicia.",
-            "posicion": "-0.0229 0.0375 0.112",
+            "posicion": "-0.0458 0.075 0.224",
             "normal": "0 1 0"
           },
           {
             "id": "entrega",
             "titulo": "Estación de entrega",
             "texto": "La meta: cada producto va a su sensor (A para la comida, B para la bebida). Con los dos en verde, pulsas el botón de despacho y completas el nivel.",
-            "posicion": "0.2208 0.0479 0.1265",
+            "posicion": "0.4416 0.0958 0.253",
             "normal": "0 1 0"
           }
         ]
@@ -887,7 +885,6 @@
       "estudiante": "Arianna Gutiérrez",
       "materia": "[EJEMPLO] Materia por confirmar",
       "periodo": "Semestre 2 - 2026",
-      "_revisar": "Textos redactados por Claude a partir del material (GDD, planos o modelo). Revisar y borrar esta nota.",
       "descripcion": "Torre de oficinas de 32 pisos sobre un podio con lobby a doble altura, de unos 166 m de altura sobre la acera y 27 838 m² de área bruta. El podio tiene un lobby acristalado con recepción, sala de espera y lounge, una escalera abierta hacia el mezzanine (+3,92 m) y una marquesina perimetral sobre columnas elípticas de hormigón. En la torre, las plantas libres de oficinas rodean un núcleo central de ascensores, escaleras y servicios; la planta se ensancha hacia los pisos medios y se estrecha hacia la coronación, con 4,38 m de piso a piso. Remata en un volumen acristalado con azotea técnica y una góndola para el mantenimiento de las fachadas.",
       "portada": "img/london-render.webp",
       "imagenes": [],
@@ -964,7 +961,7 @@
         "url": "https://skfb.ly/pKVG9",
         "licencia": "CC BY 4.0",
         "licenciaUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "adaptacion": "",
+        "adaptacion": "Xavier Ponce",
         "cambios": "Planos elaborados a partir del modelo original; para la vitrina se simplificó y optimizó para celular."
       },
       "ar": {
@@ -1124,8 +1121,7 @@
       "ubicacion": "",
       "estudiante": "Arllys Ramos",
       "materia": "Modelado 3D",
-      "periodo": "[EJEMPLO] Por confirmar",
-      "_revisar": "Textos redactados por Claude a partir del material (GDD, planos o modelo). Revisar y borrar esta nota.",
+      "periodo": "Semestre 2 - 2026",
       "descripcion": "Interior de una cafetería inspirada en los diners estadounidenses de los años 50. El piso de damero blanco y negro, los gabinetes turquesa con mesas rosadas y la barra en «L» con taburetes cromados, bajo un plafón con franjas de neón rosa, reúnen los rasgos del estilo retro. Unas puertas dobles con ventanas de ojo de buey llevan a la cocina y una galería de cuadros en blanco y negro decora el muro lateral. La escena está abierta por dos lados, como una casa de muñecas, para mirarla desde cualquier ángulo.",
       "portada": "img/cafeteria-render.webp",
       "imagenes": [],

@@ -9,7 +9,8 @@
 // Qué hace, en orden:
 //   1. Pasa el modelo (en metros reales) a MAQUETA: lo centra, deja la base en y = 0
 //      y lo divide por la escala (25 → maqueta 1:25).
-//   2. Quita lo que no aporta (nodos por nombre, luces, cámaras) y, si se pide,
+//   2. Quita lo que no aporta (nodos o materiales por nombre, luces, cámaras), cambia
+//      las transparencias caras por recortes u opacos (Ronda 4) y, si se pide,
 //      simplifica SOLO las piezas chicas (comida, adornos), nunca muros ni pisos.
 //   3. Reduce las «llamadas de dibujo» (lo que más pone lento a un celular):
 //      une materiales de color liso en una paleta (palette) y junta las mallas
@@ -48,6 +49,11 @@ const texto = (m) => `${m.triangulos} triángulos · ${m.llamadas} llamadas de d
  *   entrada, salida   rutas de los .glb
  *   escala            1:escala (25 → maqueta 1:25)
  *   quitar            RegExp: nodos que se borran (techo, cielo, colisiones…)
+ *   quitarMateriales  RegExp: se borran las piezas con esos materiales (por ejemplo, invisibles)
+ *   recorte           RegExp: materiales transparentes que en realidad son «recortes» (cada píxel es
+ *                     100 % visible o invisible: marcos, rejas, hojas). Pasan a alphaMode MASK: se
+ *                     dibujan como opacos (sin mezclar colores ni ordenar), mucho más barato.
+ *   opacos            RegExp: materiales transparentes que pasan a opacos
  *   simplificar       { nodos: RegExp, ratio: 0.5, error: 0.002 } → solo esas piezas
  *   simplificarTodo   { ratio, error, planas } → todo el modelo (para la versión liviana del carrusel)
  *                     planas: true = sin normales (caras planas), para poder soldar y simplificar más
@@ -80,6 +86,19 @@ export async function optimizar(o) {
     escena.traverse(n => { if (quitar.test(n.getName())) borrar.push(n); });
     borrar.forEach(n => n.dispose());
     console.log(`Quitados ${borrar.length} nodos (${quitar})`);
+  }
+  if (o.quitarMateriales) {
+    let n = 0;
+    for (const m of raiz.listMeshes()) for (const p of m.listPrimitives()) {
+      if (o.quitarMateriales.test(p.getMaterial()?.getName() ?? '')) { m.removePrimitive(p); p.dispose(); n++; }
+    }
+    console.log(`Quitadas ${n} piezas con materiales ${o.quitarMateriales}`);
+  }
+  // Transparencias: mezclar colores es lo más caro por píxel en un celular
+  for (const m of raiz.listMaterials()) {
+    if (m.getAlphaMode() !== 'BLEND') continue;
+    if (o.recorte?.test(m.getName())) { m.setAlphaMode('MASK').setAlphaCutoff(0.5); console.log(`Recorte: ${m.getName()}`); }
+    else if (o.opacos?.test(m.getName())) { m.setAlphaMode('OPAQUE'); console.log(`Opaco: ${m.getName()}`); }
   }
   escena.traverse(n => { n.setExtension('KHR_lights_punctual', null); n.setCamera(null); });
   raiz.listExtensionsUsed().filter(e => e.extensionName === 'KHR_lights_punctual').forEach(e => e.dispose());

@@ -128,7 +128,9 @@ a.chip-claro:hover { background: var(--hielo); }
 .hero-pie { position: relative; display: grid; gap: 16px; padding: 0 20px; }
 
 /* ---------- Carrusel del hero (js/carrusel.js) ----------
-   Celular: ~60 % del alto de la pantalla y todo el ancho. Monitor: 560 px de alto. */
+   Celular: ~60 % del alto de la pantalla y todo el ancho.
+   Monitor: todo el ancho del hero, DETRÁS de los títulos, y un alto que se ajusta a la
+   pantalla para que el modelo, el nombre y la carrera entren sin hacer scroll. */
 .carrusel { display: grid; gap: 8px; }
 .carrusel-visor { position: relative; height: 60svh; min-height: 320px; max-height: 620px; margin: 0 -20px; }
 .carrusel-modelo {
@@ -136,7 +138,7 @@ a.chip-claro:hover { background: var(--hielo); }
   opacity: 0; transition: opacity .6s ease; pointer-events: none;
   --poster-color: transparent; background: transparent;
 }
-.carrusel-modelo.activo { opacity: 1; }
+.carrusel-modelo.activo { opacity: 1; pointer-events: auto; }   /* se gira con el dedo o el mouse */
 .carrusel-enlace {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   min-height: 52px; color: var(--blanco); text-decoration: none;
@@ -155,8 +157,13 @@ a.chip-claro:hover { background: var(--hielo); }
   .hero { padding-bottom: 36px; }
   .hero-cuerpo { grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1fr); align-items: start; padding: 48px 36px 0; }
   .hero .lema { grid-column: 1; grid-row: 1; }
-  .carrusel { grid-column: 2; grid-row: 1 / span 2; }
-  .carrusel-visor { height: 560px; margin: 0; }
+  .carrusel { grid-column: 2; grid-row: 1 / span 2; --alto-visor: clamp(360px, calc(100svh - 300px), 560px); }
+  /* El hueco reserva el alto; el visor se estira a todo el hero (lo contiene .hero-cuerpo) */
+  .carrusel::before { content: ""; height: var(--alto-visor); }
+  .carrusel-visor { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--alto-visor) + 48px); margin: 0; }
+  .hero .lema, .hero h1, .carrusel-enlace, .carrusel-puntos { position: relative; z-index: 1; pointer-events: none; }
+  .carrusel-enlace, .carrusel-puntos button { pointer-events: auto; }
+  .hero .lema, .hero h1 { text-shadow: 0 2px 18px rgba(4, 60, 120, .35); }
   .hero h1 { grid-column: 3; grid-row: 1; text-align: right; font-size: clamp(44px, 4.6vw, 62px); }
   .hero-pie { grid-template-columns: auto 1fr; align-items: end; padding: 0 36px; }
   .hero-pie .chips { justify-content: flex-end; }
